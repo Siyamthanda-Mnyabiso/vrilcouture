@@ -59,7 +59,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                                         name={item.name}
                                         price={item.price}
                                         quantity={item.quantity}
-                                        image={item.image}
+                                        image={item.image || item.image_url}
                                         onUpdateQuantity={updateQuantity}
                                         onRemove={removeFromCart}
                                     />

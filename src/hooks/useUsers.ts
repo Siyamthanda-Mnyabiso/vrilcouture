@@ -1,7 +1,7 @@
 // src/hooks/useUsers.ts
 import { useState, useEffect } from 'react';
 import { usersService } from '../services/supabase/users.service';
-import type { User } from '../services/supabase/users.service';
+import type { User } from '../types/user';
 
 export const useUsers = () => {
     const [users, setUsers] = useState<User[]>([]);
