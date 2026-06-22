@@ -1,0 +1,403 @@
+/* 1. First: Import Tailwind */
+@import "tailwindcss";
+
+
+
+/* 3. Third: Custom theme configuration */
+@theme {
+    /* Custom colors */
+    --color-cream: #F5F1EA;
+    --color-taupe: #6B5D4F;
+    --color-taupe-light: #5A4D40;
+    --color-taupe-dark: #4A3D30;
+    --color-beige: #C4B8A8;
+    --color-beige-light: #D5C9B9;
+    --color-warm-gray: #8A8378;
+    --color-charcoal: #2C2420;
+
+    /* Font families */
+    --font-display: 'Big Shoulders Display', sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 4. Fourth: Custom base styles */
+@layer base {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+        font-family: var(--font-body);
+        background-color: var(--color-cream);
+        color: var(--color-charcoal);
+        min-height: 100vh;
+    }
+
+    ::selection {
+        background-color: var(--color-taupe);
+        color: #FFFFFF;
+    }
+
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--color-cream);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--color-beige);
+        border-radius: 0;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-taupe);
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-taupe);
+        outline-offset: 2px;
+    }
+
+    a {
+        text-decoration: none;
+    }
+
+    button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    input,
+    textarea,
+    select {
+        font-family: inherit;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: var(--font-body);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+    }
+}
+
+/* 5. Fifth: Custom components */
+@layer components {
+    .container-custom {
+        max-width: 1440px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+        .container-custom {
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .container-custom {
+            padding-left: 3rem;
+            padding-right: 3rem;
+        }
+    }
+
+    .nav-link {
+        position: relative;
+        display: inline-block;
+        transition: color 0.2s ease;
+    }
+
+    .nav-link::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background-color: currentColor;
+        transition: width 0.3s ease;
+    }
+
+    .nav-link:hover::after {
+        width: 100%;
+    }
+
+    .nav-link.active::after {
+        width: 100%;
+    }
+
+    .mega-column-divider {
+        border-right: 1px solid rgba(90, 77, 64, 0.5);
+    }
+
+    .product-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .product-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .category-card-overlay {
+        background: linear-gradient(
+                to bottom,
+                rgba(44, 36, 32, 0) 0%,
+                rgba(44, 36, 32, 0.6) 100%
+        );
+    }
+
+    .admin-sidebar-link {
+        transition: all 0.2s ease;
+    }
+
+    .admin-sidebar-link:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .admin-sidebar-link.active {
+        background-color: var(--color-taupe);
+        color: #FFFFFF;
+    }
+}
+
+/* 6. Sixth: Custom utilities */
+@layer utilities {
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .text-shadow-hero {
+        text-shadow: 0 2px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .transition-smooth {
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .cover-image {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    .truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .truncate-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .animate-enter {
+        animation: enter 0.3s ease-out forwards;
+    }
+
+    @keyframes enter {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .animate-slide-in-right {
+        animation: slideInRight 0.3s ease-out forwards;
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+
+    .animate-slide-in-left {
+        animation: slideInLeft 0.3s ease-out forwards;
+    }
+
+    @keyframes slideInLeft {
+        from {
+            transform: translateX(-100%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .animate-pulse-slow {
+        animation: pulseSlow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulseSlow {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    .skeleton {
+        background: var(--color-beige-light);
+        background: linear-gradient(
+                90deg,
+                var(--color-beige-light) 25%,
+                #E8E0D6 50%,
+                var(--color-beige-light) 75%
+        );
+        background-size: 200% 100%;
+        animation: skeleton 1.5s ease-in-out infinite;
+    }
+
+    @keyframes skeleton {
+        0% {
+            background-position: 200% 0;
+        }
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    .grid-pattern {
+        background-image:
+                linear-gradient(rgba(107, 93, 79, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(107, 93, 79, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+    }
+
+    .shadow-card {
+        box-shadow: 0 1px 3px rgba(44, 36, 32, 0.06), 0 1px 2px rgba(44, 36, 32, 0.04);
+    }
+
+    .shadow-card-hover {
+        box-shadow: 0 10px 30px rgba(44, 36, 32, 0.08), 0 4px 10px rgba(44, 36, 32, 0.04);
+    }
+
+    .border-warm {
+        border-color: var(--color-beige-light);
+    }
+
+    .bg-warm-dots {
+        background-image: radial-gradient(var(--color-beige) 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+
+    .z-announcement {
+        z-index: 50;
+    }
+    .z-nav {
+        z-index: 49;
+    }
+    .z-mega {
+        z-index: 48;
+    }
+    .z-modal {
+        z-index: 100;
+    }
+    .z-drawer {
+        z-index: 50;
+    }
+    .z-overlay {
+        z-index: 40;
+    }
+}
+
+/* 7. Seventh: Custom font classes */
+.font-logo {
+    font-family: 'Big Shoulders Display', sans-serif;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* 8. Eighth: Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    body {
+        background: white !important;
+        color: black !important;
+    }
+}
+
+/* 9. Ninth: High contrast mode */
+@media (prefers-contrast: high) {
+    .contrast-border {
+        border-width: 2px !important;
+    }
+}
+
+/* 10. Tenth: Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* 11. Eleventh: Dark mode (optional) */
+@media (prefers-color-scheme: dark) {
+    /* We're keeping the warm theme regardless of system preference */
+}
+@keyframes marquee {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-33.333%);
+    }
+}
+
+.animate-marquee {
+    animation: marquee 25s linear infinite;
+}
