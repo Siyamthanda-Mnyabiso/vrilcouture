@@ -1,9 +1,23 @@
+// src/services/supabase/auth.service.ts
 import { supabase } from './client';
 import type { User } from '../../types/user';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
-import type { Database } from '../../types/database'; // Make sure this import is correct
 
-type UserProfile = Database['public']['Tables']['users']['Row'];
+interface UserProfile {
+    id: string;
+    email: string;
+    full_name: string | null;
+    phone: string | null;
+    role: 'customer' | 'admin';
+    address_line1: string | null;
+    address_line2: string | null;
+    city: string | null;
+    postal_code: string | null;
+    province: string | null;
+    country: string | null;
+    created_at: string;
+    updated_at: string;
+}
 
 interface SignUpMetadata {
     full_name?: string;
@@ -58,7 +72,7 @@ export const authService = {
                     .single();
 
                 if (!profileError) {
-                    profile = profileData;
+                    profile = profileData as UserProfile;
                 } else if (profileError.code !== 'PGRST116') {
                     console.error('Error fetching user profile:', profileError);
                 }
@@ -66,21 +80,23 @@ export const authService = {
                 console.debug('Profile fetch error (may be expected):', profileError);
             }
 
+            const email = userData.user.email || '';
+
             return {
                 id: userData.user.id,
-                email: userData.user.email || '',
+                email: email,
                 full_name:
                     userData.user.user_metadata?.full_name ||
                     profile?.full_name ||
-                    (userData.user.email ? userData.user.email.split('@')[0] : '') ||
+                    (email ? email.split('@')[0] : '') ||
                     '',
                 phone: profile?.phone || '',
                 role: (profile?.role as 'customer' | 'admin') || 'customer',
                 created_at: profile?.created_at ||
-                    userData.user.created_at ||
+                    (userData.user as any).created_at ||
                     new Date().toISOString(),
                 updated_at: profile?.updated_at ||
-                    new Date().toISOString(), // Remove userData.user.updated_at
+                    new Date().toISOString(),
             };
         } catch (error) {
             console.error('Error in getCurrentUser:', error);
@@ -103,7 +119,7 @@ export const authService = {
 
             if (authError) throw authError;
 
-            const updateData: Record<string, unknown> = {
+            const updateData: any = {
                 updated_at: new Date().toISOString(),
             };
 
@@ -119,17 +135,19 @@ export const authService = {
             if (profileError) {
                 if (profileError.code === '42P01') {
                     console.warn('Users table not found, creating profile...');
+                    const insertData: any = {
+                        id: currentUser.id,
+                        email: currentUser.email,
+                        full_name: data.full_name || currentUser.full_name,
+                        phone: data.phone || currentUser.phone,
+                        role: data.role || currentUser.role,
+                        created_at: currentUser.created_at,
+                        updated_at: new Date().toISOString(),
+                    };
+
                     const { error: insertError } = await supabase
                         .from('users')
-                        .insert({
-                            id: currentUser.id,
-                            email: currentUser.email,
-                            full_name: data.full_name || currentUser.full_name,
-                            phone: data.phone || currentUser.phone,
-                            role: data.role || currentUser.role,
-                            created_at: currentUser.created_at,
-                            updated_at: new Date().toISOString(),
-                        });
+                        .insert(insertData);
 
                     if (insertError) {
                         console.error('Error creating user profile:', insertError);
@@ -165,12 +183,10 @@ export const authService = {
     },
 
     onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
-        // Get the subscription from Supabase
         const { data } = supabase.auth.onAuthStateChange((event, session) => {
             callback(event, session);
         });
 
-        // Return the subscription with unsubscribe method
         return {
             unsubscribe: () => {
                 data?.subscription?.unsubscribe();

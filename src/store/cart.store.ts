@@ -1,3 +1,4 @@
+// src/store/cart.store.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -6,16 +7,13 @@ export interface CartItem {
     name: string;
     price: number;
     quantity: number;
-    image: string;
-    variant?: {
-        size?: string;
-        color?: string;
-    };
+    image_url: string;  // Note: this should be string, not string | null
+    stock: number;
 }
 
-interface CartState {
+interface CartStore {
     items: CartItem[];
-    addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
+    addItem: (item: CartItem) => void;
     removeItem: (id: string) => void;
     updateQuantity: (id: string, quantity: number) => void;
     clearCart: () => void;
@@ -23,39 +21,35 @@ interface CartState {
     getSubtotal: () => number;
 }
 
-export const useCartStore = create<CartState>()(
+export const useCartStore = create<CartStore>()(
     persist(
         (set, get) => ({
             items: [],
 
-            addItem: (newItem) => {
-                const { items } = get();
-                const existingItem = items.find((item) => item.id === newItem.id);
+            addItem: (item) => {
+                set((state) => {
+                    const existingItem = state.items.find((i) => i.id === item.id);
 
-                if (existingItem) {
-                    set({
-                        items: items.map((item) =>
-                            item.id === newItem.id
-                                ? { ...item, quantity: item.quantity + (newItem.quantity || 1) }
-                                : item
-                        ),
-                    });
-                } else {
-                    set({
-                        items: [
-                            ...items,
-                            {
-                                ...newItem,
-                                quantity: newItem.quantity || 1,
-                                image: newItem.image || '',
-                            },
-                        ],
-                    });
-                }
+                    if (existingItem) {
+                        return {
+                            items: state.items.map((i) =>
+                                i.id === item.id
+                                    ? { ...i, quantity: i.quantity + item.quantity }
+                                    : i
+                            ),
+                        };
+                    }
+
+                    return {
+                        items: [...state.items, item],
+                    };
+                });
             },
 
             removeItem: (id) => {
-                set({ items: get().items.filter((item) => item.id !== id) });
+                set((state) => ({
+                    items: state.items.filter((item) => item.id !== id),
+                }));
             },
 
             updateQuantity: (id, quantity) => {
@@ -63,11 +57,12 @@ export const useCartStore = create<CartState>()(
                     get().removeItem(id);
                     return;
                 }
-                set({
-                    items: get().items.map((item) =>
+
+                set((state) => ({
+                    items: state.items.map((item) =>
                         item.id === id ? { ...item, quantity } : item
                     ),
-                });
+                }));
             },
 
             clearCart: () => {
@@ -75,11 +70,13 @@ export const useCartStore = create<CartState>()(
             },
 
             getItemCount: () => {
-                return get().items.reduce((sum, item) => sum + item.quantity, 0);
+                const state = get();
+                return state.items.reduce((sum, item) => sum + item.quantity, 0);
             },
 
             getSubtotal: () => {
-                return get().items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+                const state = get();
+                return state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
             },
         }),
         {

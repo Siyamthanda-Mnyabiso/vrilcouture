@@ -1,31 +1,44 @@
-import { useEffect } from 'react';
+// src/pages/store/ProductDetails.tsx
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ProductGallery } from '../../components/product/ProductGallery';
-import { ProductInfo } from '../../components/product/ProductInfo';
-import { ProductGrid } from '../../components/product/ProductGrid';
-import { useProducts } from '../../hooks/useProducts';
+import { productsService } from '../../services/supabase/products.service';
+import type { Product } from '../../services/supabase/products.service';
+import { useCart } from '../../hooks/useCart';
 
 export const ProductDetails = () => {
     const { slug } = useParams<{ slug: string }>();
-    const {
-        currentProduct,
-        loading,
-        fetchProductBySlug,
-        fetchRelatedProducts,
-        relatedProducts
-    } = useProducts();
+    const [product, setProduct] = useState<Product | null>(null);
+    const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { addToCart } = useCart();
 
     useEffect(() => {
-        if (slug) {
-            fetchProductBySlug(slug);
-        }
+        const fetchProduct = async () => {
+            if (!slug) return;
+            setLoading(true);
+            try {
+                const productData = await productsService.getBySlug(slug);
+                if (productData) {
+                    setProduct(productData);
+
+                    // Fetch related products if category exists
+                    if (productData.category_id) {
+                        const related = await productsService.getRelatedProducts(
+                            productData.id,
+                            productData.category_id
+                        );
+                        setRelatedProducts(related);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching product:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProduct();
     }, [slug]);
-
-    useEffect(() => {
-        if (currentProduct) {
-            fetchRelatedProducts(currentProduct.id, currentProduct.category?.id);
-        }
-    }, [currentProduct]);
 
     if (loading) {
         return (
@@ -35,7 +48,7 @@ export const ProductDetails = () => {
         );
     }
 
-    if (!currentProduct) {
+    if (!product) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center py-16 text-center">
                 <h2 className="text-2xl font-bold text-[#2C2420] mb-2">Product Not Found</h2>
@@ -50,6 +63,17 @@ export const ProductDetails = () => {
         );
     }
 
+    const handleAddToCart = () => {
+        addToCart({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: 1,
+            image_url: product.image_url || '',
+            stock: product.stock
+        });
+    };
+
     return (
         <main className="py-8 md:py-12">
             <div className="max-w-[1440px] mx-auto px-6">
@@ -59,29 +83,67 @@ export const ProductDetails = () => {
                         Home
                     </Link>
                     <span className="text-[#8A8378]">/</span>
-                    {currentProduct.category && (
-                        <>
-                            <Link
-                                to={`/category/${currentProduct.category.slug}`}
-                                className="text-[#8A8378] hover:text-[#2C2420] transition-colors"
-                            >
-                                {currentProduct.category.name}
-                            </Link>
-                            <span className="text-[#8A8378]">/</span>
-                        </>
-                    )}
+                    <Link to="/shop" className="text-[#8A8378] hover:text-[#2C2420] transition-colors">
+                        Shop
+                    </Link>
+                    <span className="text-[#8A8378]">/</span>
                     <span className="text-[#2C2420] font-medium truncate">
-            {currentProduct.name}
-          </span>
+                        {product.name}
+                    </span>
                 </nav>
 
                 {/* Product Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-                    <ProductGallery
-                        images={currentProduct.images || []}
-                        productName={currentProduct.name}
-                    />
-                    <ProductInfo product={currentProduct} />
+                    {/* Product Image */}
+                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                        {product.image_url ? (
+                            <img
+                                src={product.image_url}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                No Image
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="flex flex-col gap-4">
+                        <h1 className="text-3xl font-bold text-[#2C2420]">{product.name}</h1>
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-2xl font-semibold text-[#2C2420]">
+                                R{product.price.toFixed(2)}
+                            </span>
+                            {product.original_price && (
+                                <span className="text-lg text-gray-400 line-through">
+                                    R{product.original_price.toFixed(2)}
+                                </span>
+                            )}
+                        </div>
+
+                        {product.description && (
+                            <p className="text-[#8A8378]">{product.description}</p>
+                        )}
+
+                        <div className="flex items-center gap-4 mt-4">
+                            <button
+                                onClick={handleAddToCart}
+                                className="flex-1 py-3 bg-[#6B5D4F] text-white text-sm font-medium uppercase tracking-wider hover:bg-[#5A4D40] transition-colors"
+                                disabled={product.stock === 0}
+                            >
+                                {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+                            </button>
+                        </div>
+
+                        {product.stock !== undefined && (
+                            <p className="text-sm text-[#8A8378]">
+                                {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 {/* Related Products */}
@@ -90,7 +152,31 @@ export const ProductDetails = () => {
                         <h3 className="text-2xl font-bold text-[#2C2420] tracking-wide mb-8">
                             You Might Also Like
                         </h3>
-                        <ProductGrid products={relatedProducts} columns={4} />
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {relatedProducts.map((related) => (
+                                <Link
+                                    key={related.id}
+                                    to={`/product/${related.id}`}
+                                    className="group"
+                                >
+                                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                                        {related.image_url ? (
+                                            <img
+                                                src={related.image_url}
+                                                alt={related.name}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                No Image
+                                            </div>
+                                        )}
+                                    </div>
+                                    <h3 className="mt-2 font-medium text-[#2C2420]">{related.name}</h3>
+                                    <p className="text-[#8A8378]">R{related.price.toFixed(2)}</p>
+                                </Link>
+                            ))}
+                        </div>
                     </section>
                 )}
             </div>

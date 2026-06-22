@@ -1,110 +1,123 @@
+// src/services/supabase/orders.service.ts
 import { supabase } from './client';
-import type { Order } from '../../types/order';
+
+export interface Order {
+    id: string;
+    user_id: string;
+    status: 'pending' | 'paid' | 'fulfilled' | 'cancelled';
+    total: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface OrderItem {
+    id: string;
+    order_id: string;
+    product_id: string | null;
+    product_name: string;
+    quantity: number;
+    price: number;
+}
+
+export interface CreateOrderInput {
+    user_id: string;
+    status?: 'pending' | 'paid' | 'fulfilled' | 'cancelled';
+    total: number;
+}
+
+export interface CreateOrderItemInput {
+    order_id: string;
+    product_id?: string | null;
+    product_name: string;
+    quantity: number;
+    price: number;
+}
 
 export const ordersService = {
-    /**
-     * Get all orders (admin only)
-     */
-    async getAll(): Promise<Order[]> {
+    async getOrders(): Promise<Order[]> {
         const { data, error } = await supabase
             .from('orders')
-            .select('*, items:order_items(*)')
+            .select('*')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        return data || [];
+        return data as Order[];
     },
 
-    /**
-     * Get a single order by ID
-     */
-    async getById(id: string): Promise<Order> {
+    async getOrderById(id: string): Promise<Order | null> {
         const { data, error } = await supabase
             .from('orders')
-            .select('*, items:order_items(*)')
+            .select('*')
             .eq('id', id)
             .single();
 
         if (error) throw error;
-        if (!data) throw new Error('Order not found');
-        return data;
+        return data as Order;
     },
 
-    /**
-     * Get orders for a specific user
-     */
-    async getUserOrders(userId: string): Promise<Order[]> {
+    async getOrdersByUser(userId: string): Promise<Order[]> {
         const { data, error } = await supabase
             .from('orders')
-            .select('*, items:order_items(*)')
+            .select('*')
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        return data || [];
+        return data as Order[];
     },
 
-    /**
-     * Create a new order
-     */
-    async create(orderData: {
-        user_id: string;
-        total: number;
-        items: { product_id: string; product_name: string; quantity: number; price: number }[];
-    }): Promise<Order> {
-        const { data: order, error: orderError } = await supabase
+    async createOrder(input: CreateOrderInput): Promise<Order> {
+        const { data, error } = await supabase
             .from('orders')
-            .insert({
-                user_id: orderData.user_id,
-                status: 'pending',
-                total: orderData.total,
-            })
+            .insert(input)
             .select()
             .single();
 
-        if (orderError) throw orderError;
-
-        const orderItems = orderData.items.map((item) => ({
-            order_id: order.id,
-            product_id: item.product_id,
-            product_name: item.product_name,
-            quantity: item.quantity,
-            price: item.price,
-        }));
-
-        const { error: itemsError } = await supabase
-            .from('order_items')
-            .insert(orderItems);
-
-        if (itemsError) throw itemsError;
-
-        return this.getById(order.id);
+        if (error) throw error;
+        return data as Order;
     },
 
-    /**
-     * Update order status
-     */
-    async updateStatus(id: string, status: Order['status']): Promise<Order> {
+    async updateOrderStatus(id: string, status: Order['status']): Promise<Order> {
         const { data, error } = await supabase
             .from('orders')
-            .update({ status, updated_at: new Date().toISOString() })
+            .update({
+                status,
+                updated_at: new Date().toISOString()
+            })
             .eq('id', id)
             .select()
             .single();
 
         if (error) throw error;
-        return data;
+        return data as Order;
     },
 
-    /**
-     * Cancel an order
-     */
-    async cancel(id: string): Promise<void> {
+    async deleteOrder(id: string): Promise<void> {
         const { error } = await supabase
             .from('orders')
-            .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+            .delete()
             .eq('id', id);
 
         if (error) throw error;
     },
+
+    async getOrderItems(orderId: string): Promise<OrderItem[]> {
+        const { data, error } = await supabase
+            .from('order_items')
+            .select('*')
+            .eq('order_id', orderId);
+
+        if (error) throw error;
+        return data as OrderItem[];
+    },
+
+    async createOrderItems(inputs: CreateOrderItemInput[]): Promise<OrderItem[]> {
+        const { data, error } = await supabase
+            .from('order_items')
+            .insert(inputs)
+            .select();
+
+        if (error) throw error;
+        return data as OrderItem[];
+    }
 };
