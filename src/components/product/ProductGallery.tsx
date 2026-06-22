@@ -24,10 +24,10 @@ export const ProductGallery = ({
     const displayImages = images.length > 0 ? images : [placeholderImage];
 
     return (
-        <div className={`flex flex-col gap-4 ${className}`}>
+        <div className={`flex flex-col gap-3 sm:gap-4 ${className}`}>
             {/* Main Image */}
             <div
-                className={`relative aspect-[3/4] bg-[#F5F1EA] overflow-hidden cursor-zoom-in ${
+                className={`relative aspect-[3/4] bg-[#F5F1EA] overflow-hidden cursor-zoom-in sm:cursor-zoom-in ${
                     isZoomed ? 'cursor-zoom-out' : ''
                 }`}
                 onMouseEnter={() => setIsZoomed(true)}
@@ -44,7 +44,7 @@ export const ProductGallery = ({
 
             {/* Thumbnails */}
             {displayImages.length > 1 && (
-                <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
                     {displayImages.map((image, index) => (
                         <button
                             key={index}

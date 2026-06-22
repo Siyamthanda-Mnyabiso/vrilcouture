@@ -69,12 +69,12 @@ export const Checkout = () => {
 
     return (
         <main className="py-8 md:py-12">
-            <div className="max-w-[1440px] mx-auto px-6">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                     {/* Checkout Form */}
                     <div className="lg:col-span-2">
-                        <h1 className="text-4xl md:text-5xl font-bold text-[#2C2420] tracking-wide mb-4">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#2C2420] tracking-wide mb-4">
                             Checkout
                         </h1>
                         <div className="w-12 h-0.5 bg-[#6B5D4F] mb-8" />
@@ -117,7 +117,7 @@ export const Checkout = () => {
                                     Shipping Address
                                 </h3>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <Input
                                         name="firstName"
                                         label="First Name"
@@ -134,7 +134,7 @@ export const Checkout = () => {
                                         required
                                     />
 
-                                    <div className="col-span-2">
+                                    <div className="col-span-1 sm:col-span-2">
                                         <Input
                                             name="address"
                                             label="Street Address"
@@ -173,7 +173,7 @@ export const Checkout = () => {
 
                     {/* Order Summary */}
                     <div className="lg:col-span-1">
-                        <div className="bg-[#F5F1EA] p-6 sticky top-24">
+                        <div className="bg-[#F5F1EA] p-6 lg:sticky lg:top-24">
 
                             <h3 className="text-lg font-medium uppercase mb-4">
                                 Order Summary

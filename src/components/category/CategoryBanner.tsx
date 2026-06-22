@@ -18,22 +18,28 @@ export function CategoryBanner({
             relative
             overflow-hidden
             bg-[#F8F8F6]
-            px-8
+            px-6
             md:px-20
-            py-24
+            py-16
+            md:py-24
         ">
 
             {/* background detail */}
             <div className="
                 absolute
-                top-10
-                right-10
+                top-6
+                right-4
+                md:top-10
+                md:right-10
                 text-black/5
-                text-[12rem]
+                text-[4rem]
+                sm:text-[6rem]
+                md:text-[12rem]
                 font-display
                 uppercase
                 leading-none
                 pointer-events-none
+                whitespace-nowrap
             ">
                 {categoryName}
             </div>
@@ -46,7 +52,8 @@ export function CategoryBanner({
                 mx-auto
                 grid
                 md:grid-cols-2
-                gap-16
+                gap-10
+                md:gap-16
                 items-center
             ">
 
@@ -58,8 +65,10 @@ export function CategoryBanner({
                         text-black/40
                         uppercase
                         text-xs
-                        tracking-[0.6em]
-                        mb-6
+                        tracking-[0.4em]
+                        md:tracking-[0.6em]
+                        mb-4
+                        md:mb-6
                     ">
                         Vril Collection
                     </p>
@@ -68,11 +77,13 @@ export function CategoryBanner({
                     <h2 className="
                         font-display
                         text-black
-                        text-6xl
+                        text-4xl
+                        sm:text-5xl
                         md:text-8xl
                         uppercase
                         tracking-tight
-                        leading-[0.85]
+                        leading-[0.9]
+                        md:leading-[0.85]
                         font-light
                     ">
                         {categoryName}
@@ -80,7 +91,8 @@ export function CategoryBanner({
 
 
                     <p className="
-                        mt-8
+                        mt-6
+                        md:mt-8
                         max-w-md
                         text-black/60
                         text-sm
@@ -94,7 +106,8 @@ export function CategoryBanner({
                         to={`/category/${categorySlug}`}
                         className="
                             inline-flex
-                            mt-10
+                            mt-8
+                            md:mt-10
                             items-center
                             gap-4
                             text-xs
@@ -140,7 +153,9 @@ export function CategoryBanner({
                         className="
                             relative
                             z-10
-                            max-h-[550px]
+                            max-h-[320px]
+                            sm:max-h-[420px]
+                            md:max-h-[550px]
                             object-contain
                             transition-transform
                             duration-700

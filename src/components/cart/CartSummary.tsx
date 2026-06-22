@@ -43,7 +43,7 @@ export const CartSummary = ({
 
             <div className="border-t border-[#D5C9B9] pt-3 mt-3">
                 <div className="flex items-center justify-between">
-          <span className="text-base font-medium text-[#2C2420 uppercase tracking-wide">
+          <span className="text-base font-medium text-[#2C2420] uppercase tracking-wide">
             Total
           </span>
                     <span className="text-xl font-bold text-[#2C2420]">
