@@ -29,19 +29,19 @@ export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
             />
 
             {/* Menu */}
-            <div className="fixed top-0 left-0 bottom-0 z-50 w-80 bg-[#F5F1EA] shadow-xl animate-in slide-in-from-left duration-300">
+            <div className="fixed top-0 left-0 bottom-0 z-50 w-80 bg-white shadow-xl animate-in slide-in-from-left duration-300">
                 <div className="flex flex-col h-full">
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-[#D5C9B9]">
+                    <div className="flex items-center justify-between p-6 border-b border-black">
             <span
-                className="text-[#2C2420] text-2xl font-bold tracking-wider"
+                className="text-black text-2xl font-bold tracking-wider"
                 style={{ fontFamily: "'Big Shoulders Display', sans-serif" }}
             >
               VRIL COUTURE
             </span>
                         <button
                             onClick={onClose}
-                            className="text-[#8A8378] hover:text-[#2C2420] transition-colors"
+                            className="text-black hover:opacity-60 transition-opacity"
                             aria-label="Close menu"
                         >
                             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -58,7 +58,7 @@ export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
                                     <Link
                                         to={item.path}
                                         onClick={onClose}
-                                        className="block text-[#2C2420] text-lg font-medium tracking-wide hover:text-[#6B5D4F] transition-colors"
+                                        className="block text-black text-lg font-medium tracking-wide hover:opacity-60 transition-opacity"
                                     >
                                         {item.label}
                                     </Link>
@@ -67,10 +67,10 @@ export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
                         </ul>
 
                         {/* Auth buttons */}
-                        <div className="mt-8 pt-8 border-t border-[#D5C9B9]">
+                        <div className="mt-8 pt-8 border-t border-black">
                             {user ? (
                                 <div className="space-y-4">
-                                    <p className="text-[#2C2420] text-sm">
+                                    <p className="text-black text-sm">
                                         Hello, {user.email}
                                     </p>
                                     <button
@@ -78,7 +78,7 @@ export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
                                             signOut();
                                             onClose();
                                         }}
-                                        className="text-[#6B5D4F] text-sm font-medium uppercase tracking-wider hover:opacity-80 transition-opacity"
+                                        className="text-black text-sm font-medium uppercase tracking-wider hover:opacity-60 transition-opacity"
                                     >
                                         Sign Out
                                     </button>
@@ -88,14 +88,14 @@ export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
                                     <Link
                                         to="/login"
                                         onClick={onClose}
-                                        className="block w-full text-center px-4 py-3 bg-[#6B5D4F] text-white text-sm font-medium uppercase tracking-wider hover:bg-[#5A4D40] transition-colors"
+                                        className="block w-full text-center px-4 py-3 bg-black text-white text-sm font-medium uppercase tracking-wider hover:bg-black/80 transition-colors"
                                     >
                                         Sign In
                                     </Link>
                                     <Link
                                         to="/register"
                                         onClick={onClose}
-                                        className="block w-full text-center px-4 py-3 border-2 border-[#6B5D4F] text-[#6B5D4F] text-sm font-medium uppercase tracking-wider hover:bg-[#6B5D4F] hover:text-white transition-colors"
+                                        className="block w-full text-center px-4 py-3 border-2 border-black text-black text-sm font-medium uppercase tracking-wider hover:bg-black hover:text-white transition-colors"
                                     >
                                         Create Account
                                     </Link>
