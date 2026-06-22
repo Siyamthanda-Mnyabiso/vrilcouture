@@ -1,17 +1,30 @@
-// src/services/yoco/checkout.service.ts
-// Either remove unused parameters or prefix with underscore
+export const initializeYocoCheckout = async (payload: {
+    amount: number;
+    currency: string;
+    email: string;
+    name: string;
+    metadata?: any;
+}) => {
+    try {
+        // TEMP MOCK OR REAL YOCO LOGIC HERE
+        const response = await fetch('/api/yoco/checkout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
 
-export const checkoutService = {
-    // Example: Add underscore to unused parameters
-    async createPayment(_options: any) {
-        // ... implementation
-    },
+        const data = await response.json();
 
-    async confirmPayment(_token: string, _amount: number, _currency: string) {
-        // ... implementation
-    },
-
-    async mountCardElement(_formElement: HTMLElement, _publicKey: string) {
-        // ... implementation
+        return {
+            success: true,
+            redirectUrl: data.redirectUrl,
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: 'Checkout initialization failed',
+        };
     }
 };
