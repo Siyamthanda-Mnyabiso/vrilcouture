@@ -36,7 +36,11 @@ export const Cart: React.FC = () => {
                         {items.map((item) => (
                             <CartItem
                                 key={item.id}
-                                item={item}
+                                id={item.id}
+                                name={item.name}
+                                price={item.price}
+                                quantity={item.quantity}
+                                image={item.image_url}
                                 onUpdateQuantity={updateQuantity}
                                 onRemove={removeFromCart}
                             />

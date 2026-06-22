@@ -72,7 +72,16 @@ export const Cart = () => {
                         </div>
                         <div className="divide-y divide-[#D5C9B9]">
                             {items.map((item) => (
-                                <CartItem key={item.id} item={item} />
+                                <CartItem
+                                    key={item.id}
+                                    id={item.id}
+                                    name={item.name}
+                                    price={item.price}
+                                    quantity={item.quantity}
+                                    image={item.image_url}
+                                    onUpdateQuantity={updateQuantity}
+                                    onRemove={removeFromCart}
+                                />
                             ))}
                         </div>
                     </div>
