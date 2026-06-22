@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
-import { useOrders } from '../../hooks/useOrders';
+// src/pages/account/Orders.tsx
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { Loader } from '../../components/ui/Loader';
+import { mockOrders } from '../../data/mockOrders';
+import type { Order } from '../../features/orders/order.types.tsx';
 
 const statusLabels: Record<string, string> = {
     pending: 'Pending',
@@ -14,12 +16,15 @@ const statusLabels: Record<string, string> = {
 
 export default function AccountOrders() {
     const { user } = useAuth();
-    const { orders, loading, error, fetchUserOrders } = useOrders();
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (user?.id) {
-            fetchUserOrders(user.id);
+            // No backend — show demo orders for any signed-in user
+            setOrders(mockOrders);
         }
+        setLoading(false);
     }, [user]);
 
     if (loading) {
@@ -27,14 +32,6 @@ export default function AccountOrders() {
             <div className="flex justify-center py-24">
                 <Loader size="lg" />
             </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <main className="max-w-3xl mx-auto py-16 px-6">
-                <p className="text-red-600 text-sm">{error}</p>
-            </main>
         );
     }
 
@@ -63,7 +60,7 @@ export default function AccountOrders() {
 
                             {order.items && order.items.length > 0 && (
                                 <ul className="text-sm space-y-1 mb-3">
-                                    {order.items.map((item: any) => (
+                                    {order.items.map((item) => (
                                         <li key={item.id} className="flex justify-between">
                                             <span>{item.product_name} × {item.quantity}</span>
                                             <span>R{(item.price || 0).toFixed(2)}</span>

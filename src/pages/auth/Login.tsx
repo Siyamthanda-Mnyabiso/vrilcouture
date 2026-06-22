@@ -41,7 +41,7 @@ export const Login = () => {
                         className="text-4xl font-bold text-[#2C2420] tracking-wider"
                         style={{ fontFamily: "'Big Shoulders Display', sans-serif" }}
                     >
-                        KĀNGI
+                        VRIL COUTURE.
                     </h1>
                     <div className="w-12 h-0.5 bg-[#6B5D4F] mx-auto mt-4" />
                     <p className="text-[#8A8378] mt-4">Sign in to your account</p>

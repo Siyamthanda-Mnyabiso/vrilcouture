@@ -1,6 +1,6 @@
 // src/components/product/ProductInfo.tsx
 import { useCart } from '../../hooks/useCart';
-import type { Product } from '../../services/supabase/products.service';
+import type { Product } from '../../features/products/product.types';
 
 interface ProductInfoProps {
     product: Product;
@@ -14,14 +14,13 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
             id: product.id,
             name: product.name,
             price: product.price,
-            image_url: product.image_url || '', // Use image_url instead of image
+            image_url: product.image_url || '',
             stock: product.stock
         });
     };
 
     return (
         <div className="flex flex-col gap-4">
-            {/* ... rest of your component */}
             <button
                 onClick={handleAddToCart}
                 className="px-8 py-3 bg-black text-white hover:bg-gray-800 transition-colors"

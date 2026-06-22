@@ -1,10 +1,10 @@
 // src/pages/store/CategoryDetails.tsx
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { categoriesService } from '../../services/supabase/categories.service';
-import { productsService } from '../../services/supabase/products.service';
+import { mockCategories } from '../../data/mockCategories';
+import { mockProducts } from '../../data/mockProducts';
 import type { Category } from '../../types/category';
-import type { Product } from '../../services/supabase/products.service';
+import type { Product } from '../../features/products/product.types';
 
 export const CategoryDetails = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -17,10 +17,12 @@ export const CategoryDetails = () => {
             if (!slug) return;
             setLoading(true);
             try {
-                const categoryData = await categoriesService.getBySlug(slug);
+                const categoryData = mockCategories.find((c) => c.slug === slug) ?? null;
                 if (categoryData) {
                     setCategory(categoryData);
-                    const productsData = await productsService.getProductsByCategory(categoryData.id);
+                    const productsData = mockProducts.filter(
+                        (p) => p.category_id === categoryData.id
+                    );
                     setProducts(productsData);
                 }
             } catch (error) {

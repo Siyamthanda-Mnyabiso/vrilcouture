@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 
 export const Cart = () => {
     const navigate = useNavigate();
-    const { items, subtotal, itemCount, clearCart, updateQuantity, removeFromCart } = useCart();
+    const { items, subtotal, itemCount, clearCart, updateQuantity, removeItem } = useCart();
 
     const tax = subtotal * 0.15;
     const shipping = subtotal >= 2550 ? 0 : 100;
@@ -80,7 +80,7 @@ export const Cart = () => {
                                     quantity={item.quantity}
                                     image={item.image_url}
                                     onUpdateQuantity={updateQuantity}
-                                    onRemove={removeFromCart}
+                                    onRemove={removeItem}
                                 />
                             ))}
                         </div>

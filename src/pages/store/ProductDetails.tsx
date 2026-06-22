@@ -1,8 +1,8 @@
 // src/pages/store/ProductDetails.tsx
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { productsService } from '../../services/supabase/products.service';
-import type { Product } from '../../services/supabase/products.service';
+import { mockProducts } from '../../data/mockProducts';
+import type { Product } from '../../features/products/product.types';
 import { useCart } from '../../hooks/useCart';
 
 export const ProductDetails = () => {
@@ -17,16 +17,14 @@ export const ProductDetails = () => {
             if (!slug) return;
             setLoading(true);
             try {
-                const productData = await productsService.getBySlug(slug);
+                const productData = mockProducts.find((p) => p.id === slug) ?? null;
                 if (productData) {
                     setProduct(productData);
 
-                    // Fetch related products if category exists
                     if (productData.category_id) {
-                        const related = await productsService.getRelatedProducts(
-                            productData.id,
-                            productData.category_id
-                        );
+                        const related = mockProducts
+                            .filter((p) => p.category_id === productData.category_id && p.id !== productData.id)
+                            .slice(0, 4);
                         setRelatedProducts(related);
                     }
                 }
@@ -77,7 +75,6 @@ export const ProductDetails = () => {
     return (
         <main className="py-8 md:py-12">
             <div className="max-w-[1440px] mx-auto px-6">
-                {/* Breadcrumb */}
                 <nav className="flex items-center gap-2 text-sm mb-8">
                     <Link to="/" className="text-[#8A8378] hover:text-[#2C2420] transition-colors">
                         Home
@@ -92,9 +89,7 @@ export const ProductDetails = () => {
                     </span>
                 </nav>
 
-                {/* Product Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-                    {/* Product Image */}
                     <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                         {product.image_url ? (
                             <img
@@ -109,7 +104,6 @@ export const ProductDetails = () => {
                         )}
                     </div>
 
-                    {/* Product Info */}
                     <div className="flex flex-col gap-4">
                         <h1 className="text-3xl font-bold text-[#2C2420]">{product.name}</h1>
 
@@ -146,7 +140,6 @@ export const ProductDetails = () => {
                     </div>
                 </div>
 
-                {/* Related Products */}
                 {relatedProducts.length > 0 && (
                     <section className="mt-16 md:mt-24 pt-8 border-t border-[#D5C9B9]">
                         <h3 className="text-2xl font-bold text-[#2C2420] tracking-wide mb-8">

@@ -188,7 +188,7 @@ export const MegaMenu = ({ activeCategory }: MegaMenuProps) => {
                             className="text-white text-xl font-bold tracking-wider"
                             style={{ fontFamily: "'Big Shoulders Display', sans-serif" }}
                         >
-                            KĀNGI
+                            VRIL COUTURE.
                         </Link>
                         <div className="flex items-center gap-6">
                             {['New', 'Men', 'Women', 'Kids', 'Sports'].map((item) => (

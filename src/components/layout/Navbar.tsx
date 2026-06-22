@@ -8,7 +8,7 @@ import { AccountDropdown } from './AccountDropdown';
 
 export function Navbar() {
     const { itemCount } = useCart();
-    const { user, loading } = useAuth();
+    const { user } = useAuth();
     console.log('Current user:', user);
 
     return (
@@ -30,11 +30,6 @@ export function Navbar() {
                 <Link to="/shop?sale=true" className="text-sm font-medium text-black hover:opacity-60 transition-opacity">
                     Sale
                 </Link>
-                {!loading && user?.role === 'admin' && (
-                    <Link to="/admin" className="text-sm font-medium text-black hover:opacity-60 transition-opacity">
-                        Admin
-                    </Link>
-                )}
             </div>
 
             <div className="flex items-center gap-5">

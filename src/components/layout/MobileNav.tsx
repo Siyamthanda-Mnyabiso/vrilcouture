@@ -37,7 +37,7 @@ export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
                 className="text-[#2C2420] text-2xl font-bold tracking-wider"
                 style={{ fontFamily: "'Big Shoulders Display', sans-serif" }}
             >
-              KĀNGI
+              VRIL COUTURE
             </span>
                         <button
                             onClick={onClose}

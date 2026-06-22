@@ -1,7 +1,6 @@
 // src/context/AuthContext.tsx
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useUserStore } from '../store/user.store';
-import { authService } from '../services/supabase/auth.service';
 import type { User } from '../types/user';
 
 interface AuthContextType {
@@ -14,128 +13,59 @@ interface AuthContextType {
     updateProfile: (data: Partial<User>) => Promise<void>;
 }
 
-// Export the context so it can be used in hooks
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Demo/mock auth — no backend. Credentials are not checked; any input succeeds
+// so the storefront's login/register/account flows remain demoable.
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { user, setUser, clearUser } = useUserStore();
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        let isMounted = true;
-        let subscription: { unsubscribe: () => void } | null = null;
-
-        const checkSession = async () => {
-            try {
-                const session = await authService.getSession();
-                if (session?.user && isMounted) {
-                    const userData = await authService.getCurrentUser();
-                    if (userData && isMounted) {
-                        setUser(userData);
-                    }
-                }
-            } catch (error) {
-                console.error('Error checking session:', error);
-            } finally {
-                if (isMounted) {
-                    setLoading(false);
-                }
-            }
-        };
-
-        checkSession();
-
-        const authSubscription = authService.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session?.user) {
-                authService.getCurrentUser().then((userData) => {
-                    if (userData && isMounted) {
-                        setUser(userData);
-                    }
-                });
-            } else if (event === 'SIGNED_OUT') {
-                clearUser();
-            }
-        });
-
-        subscription = authSubscription;
-
-        return () => {
-            isMounted = false;
-            if (subscription && typeof subscription.unsubscribe === 'function') {
-                subscription.unsubscribe();
-            }
-        };
-    }, [setUser, clearUser]);
-
-    const signIn = async (email: string, password: string) => {
+    const signIn = async (email: string, _password: string) => {
         setLoading(true);
         try {
-            const result = await authService.signIn(email, password);
-            if (result.user) {
-                const userData = await authService.getCurrentUser();
-                if (userData) {
-                    setUser(userData);
-                }
-            }
-        } catch (error) {
-            console.error('Sign in error:', error);
-            throw error;
+            const mockUser: User = {
+                id: crypto.randomUUID(),
+                email,
+                full_name: email.split('@')[0] || 'Demo User',
+                role: 'customer',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            };
+            setUser(mockUser);
         } finally {
             setLoading(false);
         }
     };
 
-    const signUp = async (email: string, password: string, metadata?: Record<string, any>) => {
+    const signUp = async (email: string, _password: string, metadata?: Record<string, any>) => {
         setLoading(true);
         try {
-            const result = await authService.signUp(email, password, metadata);
-            if (result.user) {
-                const userData = await authService.getCurrentUser();
-                if (userData) {
-                    setUser(userData);
-                }
-            }
-        } catch (error) {
-            console.error('Sign up error:', error);
-            throw error;
+            const mockUser: User = {
+                id: crypto.randomUUID(),
+                email,
+                full_name: metadata?.full_name || email.split('@')[0] || 'Demo User',
+                role: 'customer',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            };
+            setUser(mockUser);
         } finally {
             setLoading(false);
         }
     };
 
     const signOut = async () => {
-        setLoading(true);
-        try {
-            await authService.signOut();
-            clearUser();
-        } catch (error) {
-            console.error('Sign out error:', error);
-            throw error;
-        } finally {
-            setLoading(false);
-        }
+        clearUser();
     };
 
-    const resetPassword = async (email: string) => {
-        try {
-            await authService.resetPassword(email);
-        } catch (error) {
-            console.error('Reset password error:', error);
-            throw error;
-        }
+    const resetPassword = async (_email: string) => {
+        return;
     };
 
     const updateProfile = async (data: Partial<User>) => {
         if (!user) throw new Error('No user logged in');
-        try {
-            const updated = await authService.updateUser(data);
-            if (updated) {
-                setUser(updated);
-            }
-        } catch (error) {
-            console.error('Update profile error:', error);
-            throw error;
-        }
+        setUser({ ...user, ...data, updated_at: new Date().toISOString() });
     };
 
     const value: AuthContextType = {

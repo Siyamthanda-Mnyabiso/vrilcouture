@@ -1,5 +1,5 @@
 // Site Configuration
-export const SITE_NAME = 'KĀNGI';
+export const SITE_NAME = 'VRIL COUTURE.';
 export const SITE_DESCRIPTION = 'Premium fashion for the discerning individual';
 export const SITE_URL = 'https://vrilcouture.com';
 
@@ -101,19 +101,19 @@ export const PATTERNS = {
 // Meta Data
 export const META = {
     HOME: {
-        title: 'KĀNGI - Premium Fashion',
+        title: 'VRIL COUTURE. - Premium Fashion',
         description: 'Discover our curated collection of timeless pieces designed for the discerning individual.',
     },
     SHOP: {
-        title: 'Shop All - KĀNGI',
+        title: 'Shop All - VRIL COUTURE.',
         description: 'Explore our complete collection of premium fashion.',
     },
     CART: {
-        title: 'Cart - KĀNGI',
+        title: 'Cart - VRIL COUTURE.',
         description: 'Review your items and proceed to checkout.',
     },
     CHECKOUT: {
-        title: 'Checkout - KĀNGI',
+        title: 'Checkout - VRIL COUTURE.',
         description: 'Complete your order securely.',
     },
 } as const;
