@@ -1,68 +1,71 @@
-// src/components/cart/CartItem.tsx
-import type { CartItem as CartItemType } from '../../hooks/useCart';
+import React from 'react';
+import { Minus, Plus, X } from 'lucide-react';
 
 interface CartItemProps {
-    item: CartItemType;
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    image?: string;
     onUpdateQuantity: (id: string, quantity: number) => void;
     onRemove: (id: string) => void;
 }
 
-export const CartItem = ({
-                             item,
-                             onUpdateQuantity,
-                             onRemove,
-                         }: CartItemProps) => {
+export const CartItem: React.FC<CartItemProps> = ({
+                                                      id,
+                                                      name,
+                                                      price,
+                                                      quantity,
+                                                      image,
+                                                      onUpdateQuantity,
+                                                      onRemove,
+                                                  }) => {
     return (
-        <div className="flex items-center gap-4 py-4 border-b border-gray-200">
-            <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                {item.image_url ? (
+        <div className="flex items-center gap-4 py-4 border-b border-gray-100">
+            <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0">
+                {image && (
                     <img
-                        src={item.image_url}
-                        alt={item.name}
+                        src={image}
+                        alt={name}
                         className="w-full h-full object-cover"
                     />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        No Image
-                    </div>
                 )}
             </div>
 
-            <div className="flex-1">
-                <h3 className="text-sm font-medium">{item.name}</h3>
-                <p className="text-sm text-gray-500">
-                    R {item.price}
+            <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-medium text-gray-900 truncate">{name}</h4>
+                <p className="text-sm font-semibold text-primary-600 mt-1">
+                    R{price.toFixed(2)}
                 </p>
-
-                <div className="flex items-center gap-2 mt-2">
-                    <button
-                        onClick={() =>
-                            onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))
-                        }
-                        className="px-2 py-1 border rounded"
-                    >
-                        -
-                    </button>
-
-                    <span>{item.quantity}</span>
-
-                    <button
-                        onClick={() =>
-                            onUpdateQuantity(item.id, item.quantity + 1)
-                        }
-                        className="px-2 py-1 border rounded"
-                    >
-                        +
-                    </button>
-
-                    <button
-                        onClick={() => onRemove(item.id)}
-                        className="ml-auto text-red-500 text-sm"
-                    >
-                        Remove
-                    </button>
-                </div>
             </div>
+
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => onUpdateQuantity(id, quantity - 1)}
+                    className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+                    aria-label="Decrease quantity"
+                >
+                    <Minus className="w-4 h-4 text-gray-600" />
+                </button>
+                <span className="w-8 text-center text-sm font-medium text-gray-900">
+          {quantity}
+        </span>
+                <button
+                    onClick={() => onUpdateQuantity(id, quantity + 1)}
+                    className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+                    aria-label="Increase quantity"
+                >
+                    <Plus className="w-4 h-4 text-gray-600" />
+                </button>
+            </div>
+
+            <button
+                onClick={() => onRemove(id)}
+                className="p-1 rounded-md hover:bg-red-50 transition-colors text-gray-400 hover:text-red-600"
+                aria-label="Remove item"
+            >
+                <X className="w-5 h-5" />
+            </button>
         </div>
     );
 };

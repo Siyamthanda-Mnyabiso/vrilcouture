@@ -1,134 +1,86 @@
-import { useNavigate } from 'react-router-dom';
-import { useCart } from '../../hooks/useCart';
+import React from 'react';
+import { X, ShoppingBag } from 'lucide-react';
 import { CartItem } from './CartItem';
-import { CartSummary } from './CartSummary';
+import { useCart } from '../../context/CartContext';
 
 interface CartDrawerProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-export const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
-    const { items, subtotal, itemCount, clearCart } = useCart();
-    const navigate = useNavigate();
-
-    if (!isOpen) return null;
-
-    const handleCheckout = () => {
-        onClose();
-        navigate('/checkout');
-    };
-
-    const handleContinueShopping = () => {
-        onClose();
-        navigate('/shop');
-    };
+export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
+    const { items, totalPrice, removeFromCart, updateQuantity } = useCart();
 
     return (
         <>
-            {/* Overlay */}
-            <div
-                className="fixed inset-0 z-50 bg-black/50"
-                onClick={onClose}
-            />
+            {/* Backdrop */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity"
+                    onClick={onClose}
+                />
+            )}
 
             {/* Drawer */}
-            <div className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-[#F5F1EA] shadow-xl animate-in slide-in-from-right duration-300">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-[#D5C9B9]">
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-lg font-medium text-[#2C2420] uppercase tracking-wider">
-                            Cart
+            <div
+                className={`fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 transform transition-transform duration-300 ${
+                    isOpen ? 'translate-x-0' : 'translate-x-full'
+                }`}
+            >
+                <div className="flex flex-col h-full">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-4 border-b">
+                        <h2 className="text-lg font-semibold flex items-center gap-2">
+                            <ShoppingBag className="w-5 h-5" />
+                            Your Cart
                         </h2>
-                        <span className="text-sm text-[#8A8378]">
-              ({itemCount} items)
-            </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        {items.length > 0 && (
-                            <button
-                                onClick={clearCart}
-                                className="text-sm text-[#8A8378] hover:text-[#2C2420] transition-colors"
-                            >
-                                Clear All
-                            </button>
-                        )}
                         <button
                             onClick={onClose}
-                            className="text-[#8A8378] hover:text-[#2C2420] transition-colors"
-                            aria-label="Close cart"
+                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                         >
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="square" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            <X className="w-5 h-5" />
                         </button>
                     </div>
-                </div>
 
-                {/* Cart Items */}
-                <div className="flex-1 overflow-y-auto p-6">
-                    {items.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-center">
-                            <svg
-                                className="h-16 w-16 text-[#8A8378] mb-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth="1.5"
-                            >
-                                <path
-                                    strokeLinecap="square"
-                                    strokeLinejoin="round"
-                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                                />
-                            </svg>
-                            <p className="text-[#2C2420] text-lg font-medium mb-2">
-                                Your cart is empty
-                            </p>
-                            <p className="text-[#8A8378] text-sm mb-6">
-                                Browse our collection and add items you love.
-                            </p>
-                            <button
-                                onClick={handleContinueShopping}
-                                className="px-8 py-3 bg-[#6B5D4F] text-white text-sm font-medium uppercase tracking-wider hover:bg-[#5A4D40] transition-colors"
-                            >
-                                Continue Shopping
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {items.map((item) => (
-                                <CartItem key={item.id} item={item} />
-                            ))}
-                        </div>
-                    )}
-                </div>
+                    {/* Cart Items */}
+                    <div className="flex-1 overflow-y-auto p-4">
+                        {items.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                <ShoppingBag className="w-16 h-16 mb-4 opacity-50" />
+                                <p className="text-lg font-medium">Your cart is empty</p>
+                                <p className="text-sm">Browse our products and add items you love</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {items.map((item) => (
+                                    <CartItem
+                                        key={item.id}
+                                        id={item.id}
+                                        name={item.name}
+                                        price={item.price}
+                                        quantity={item.quantity}
+                                        image={item.image}
+                                        onUpdateQuantity={updateQuantity}
+                                        onRemove={removeFromCart}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
-                {/* Footer */}
-                {items.length > 0 && (
-                    <div className="border-t border-[#D5C9B9] p-6">
-                        <CartSummary
-                            subtotal={subtotal}
-                            tax={subtotal * 0.15}
-                            shipping={subtotal >= 2550 ? 0 : 100}
-                            total={subtotal + (subtotal * 0.15) + (subtotal >= 2550 ? 0 : 100)}
-                        />
-                        <div className="flex gap-3 mt-4">
-                            <button
-                                onClick={handleContinueShopping}
-                                className="flex-1 px-4 py-3 border border-[#D5C9B9] text-[#2C2420] text-sm font-medium uppercase tracking-wider hover:bg-[#F5F1EA] transition-colors"
-                            >
-                                Continue
-                            </button>
-                            <button
-                                onClick={handleCheckout}
-                                className="flex-1 px-4 py-3 bg-[#6B5D4F] text-white text-sm font-medium uppercase tracking-wider hover:bg-[#5A4D40] transition-colors"
-                            >
+                    {/* Footer */}
+                    {items.length > 0 && (
+                        <div className="border-t p-4 space-y-4">
+                            <div className="flex justify-between text-lg font-semibold">
+                                <span>Total</span>
+                                <span>R{totalPrice.toFixed(2)}</span>
+                            </div>
+                            <button className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors">
                                 Checkout
                             </button>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </>
     );

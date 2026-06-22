@@ -5,12 +5,12 @@ import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { CartSummary } from '../../components/cart/CartSummary';
-import { initializeYocoCheckout } from '../../services/yoco/checkout.service';
 
 export const Checkout = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { items, subtotal, clearCart } = useCart();
+
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -46,32 +46,19 @@ export const Checkout = () => {
         setIsProcessing(true);
 
         try {
-            // Validate form
             if (!formData.email || !formData.firstName || !formData.lastName || !formData.address) {
                 throw new Error('Please fill in all required fields');
             }
 
-            // Initialize Yoco checkout
-            const result = await initializeYocoCheckout({
-                amount: Math.round(total * 100), // Convert to cents
-                currency: 'ZAR',
-                email: formData.email,
-                name: `${formData.firstName} ${formData.lastName}`,
-                metadata: {
-                    orderItems: items,
-                    shippingAddress: `${formData.address}, ${formData.city}, ${formData.postalCode}`,
-                },
-            });
+            // TEMP ORDER FLOW (NO PAYMENT GATEWAY)
+            await new Promise((resolve) => setTimeout(resolve, 1000));
 
-            if (result.success && result.redirectUrl) {
-                // Clear cart and redirect to Yoco
-                clearCart();
-                window.location.href = result.redirectUrl;
-            } else {
-                throw new Error(result.error || 'Payment initialization failed');
-            }
+            clearCart();
+            navigate('/order-success');
+
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
+        } finally {
             setIsProcessing(false);
         }
     };
@@ -84,6 +71,7 @@ export const Checkout = () => {
         <main className="py-8 md:py-12">
             <div className="max-w-[1440px] mx-auto px-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
                     {/* Checkout Form */}
                     <div className="lg:col-span-2">
                         <h1 className="text-4xl md:text-5xl font-bold text-[#2C2420] tracking-wide mb-4">
@@ -92,6 +80,7 @@ export const Checkout = () => {
                         <div className="w-12 h-0.5 bg-[#6B5D4F] mb-8" />
 
                         <form onSubmit={handleSubmit} className="space-y-6">
+
                             {error && (
                                 <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3">
                                     {error}
@@ -99,9 +88,10 @@ export const Checkout = () => {
                             )}
 
                             <div>
-                                <h3 className="text-lg font-medium text-[#2C2420] uppercase tracking-wider mb-4">
+                                <h3 className="text-lg font-medium uppercase mb-4">
                                     Contact Information
                                 </h3>
+
                                 <div className="space-y-4">
                                     <Input
                                         type="email"
@@ -111,6 +101,7 @@ export const Checkout = () => {
                                         onChange={handleInputChange}
                                         required
                                     />
+
                                     <Input
                                         type="tel"
                                         name="phone"
@@ -122,9 +113,10 @@ export const Checkout = () => {
                             </div>
 
                             <div>
-                                <h3 className="text-lg font-medium text-[#2C2420] uppercase tracking-wider mb-4">
+                                <h3 className="text-lg font-medium uppercase mb-4">
                                     Shipping Address
                                 </h3>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <Input
                                         name="firstName"
@@ -133,6 +125,7 @@ export const Checkout = () => {
                                         onChange={handleInputChange}
                                         required
                                     />
+
                                     <Input
                                         name="lastName"
                                         label="Last Name"
@@ -140,6 +133,7 @@ export const Checkout = () => {
                                         onChange={handleInputChange}
                                         required
                                     />
+
                                     <div className="col-span-2">
                                         <Input
                                             name="address"
@@ -149,12 +143,14 @@ export const Checkout = () => {
                                             required
                                         />
                                     </div>
+
                                     <Input
                                         name="city"
                                         label="City"
                                         value={formData.city}
                                         onChange={handleInputChange}
                                     />
+
                                     <Input
                                         name="postalCode"
                                         label="Postal Code"
@@ -170,7 +166,7 @@ export const Checkout = () => {
                                 fullWidth
                                 isLoading={isProcessing}
                             >
-                                Pay {subtotal > 0 ? `${new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(total)}` : ''}
+                                Place Order {total > 0 && `- R ${total.toFixed(2)}`}
                             </Button>
                         </form>
                     </div>
@@ -178,18 +174,19 @@ export const Checkout = () => {
                     {/* Order Summary */}
                     <div className="lg:col-span-1">
                         <div className="bg-[#F5F1EA] p-6 sticky top-24">
-                            <h3 className="text-lg font-medium text-[#2C2420] uppercase tracking-wider mb-4">
+
+                            <h3 className="text-lg font-medium uppercase mb-4">
                                 Order Summary
                             </h3>
 
                             <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
                                 {items.map((item) => (
                                     <div key={item.id} className="flex items-center gap-3 text-sm">
-                                        <span className="text-[#8A8378]">{item.quantity}x</span>
-                                        <span className="text-[#2C2420] flex-1">{item.name}</span>
-                                        <span className="text-[#2C2420] font-medium">
-                      {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(item.price * item.quantity)}
-                    </span>
+                                        <span>{item.quantity}x</span>
+                                        <span className="flex-1">{item.name}</span>
+                                        <span>
+                                            R {(item.price * item.quantity).toFixed(2)}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
@@ -202,6 +199,7 @@ export const Checkout = () => {
                             />
                         </div>
                     </div>
+
                 </div>
             </div>
         </main>
