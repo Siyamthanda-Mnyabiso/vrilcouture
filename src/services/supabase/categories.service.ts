@@ -6,7 +6,6 @@ export interface Category {
     name: string;
     slug: string;
     created_at: string;
-    updated_at?: string;
 }
 
 export const categoriesService = {
@@ -17,7 +16,7 @@ export const categoriesService = {
             .order('name', { ascending: true });
 
         if (error) throw error;
-        return data ?? [];
+        return data as Category[];
     },
 
     async getById(id: string): Promise<Category | null> {
@@ -59,10 +58,7 @@ export const categoriesService = {
     },
 
     async update(id: string, input: { name?: string; slug?: string }): Promise<Category> {
-        const updateData: any = {
-            updated_at: new Date().toISOString()
-        };
-
+        const updateData: { name?: string; slug?: string } = {};
         if (input.name !== undefined) updateData.name = input.name;
         if (input.slug !== undefined) updateData.slug = input.slug;
 

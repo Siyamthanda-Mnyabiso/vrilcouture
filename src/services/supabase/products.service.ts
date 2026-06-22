@@ -103,7 +103,17 @@ export const productsService = {
     async create(input: CreateProductInput): Promise<Product> {
         const { data, error } = await supabase
             .from('products')
-            .insert(input)
+            .insert({
+                name: input.name,
+                description: input.description || null,
+                price: input.price,
+                original_price: input.original_price || null,
+                image_url: input.image_url || null,
+                category_id: input.category_id || null,
+                brand: input.brand || null,
+                sku: input.sku || null,
+                stock: input.stock || 0,
+            })
             .select()
             .single();
 
@@ -112,12 +122,23 @@ export const productsService = {
     },
 
     async update(id: string, input: UpdateProductInput): Promise<Product> {
+        const updateData: any = {
+            updated_at: new Date().toISOString()
+        };
+
+        if (input.name !== undefined) updateData.name = input.name;
+        if (input.description !== undefined) updateData.description = input.description;
+        if (input.price !== undefined) updateData.price = input.price;
+        if (input.original_price !== undefined) updateData.original_price = input.original_price;
+        if (input.image_url !== undefined) updateData.image_url = input.image_url;
+        if (input.category_id !== undefined) updateData.category_id = input.category_id;
+        if (input.brand !== undefined) updateData.brand = input.brand;
+        if (input.sku !== undefined) updateData.sku = input.sku;
+        if (input.stock !== undefined) updateData.stock = input.stock;
+
         const { data, error } = await supabase
             .from('products')
-            .update({
-                ...input,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', id)
             .select()
             .single();

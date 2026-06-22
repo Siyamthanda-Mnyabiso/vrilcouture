@@ -1,6 +1,20 @@
 // src/services/supabase/inventory.service.ts
 import { supabase } from './client';
-import type { Product } from './products.service';
+
+export interface Product {
+    id: string;
+    name: string;
+    description: string | null;
+    price: number;
+    original_price: number | null;
+    image_url: string | null;
+    category_id: string | null;
+    brand: string | null;
+    sku: string | null;
+    stock: number;
+    created_at: string;
+    updated_at: string;
+}
 
 export const inventoryService = {
     async updateStock(productId: string, quantity: number): Promise<Product> {

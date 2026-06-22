@@ -119,7 +119,12 @@ export const authService = {
 
             if (authError) throw authError;
 
-            const updateData: any = {
+            const updateData: {
+                full_name?: string | null;
+                phone?: string | null;
+                role?: 'customer' | 'admin';
+                updated_at?: string;
+            } = {
                 updated_at: new Date().toISOString(),
             };
 
@@ -135,7 +140,15 @@ export const authService = {
             if (profileError) {
                 if (profileError.code === '42P01') {
                     console.warn('Users table not found, creating profile...');
-                    const insertData: any = {
+                    const insertData: {
+                        id: string;
+                        email: string;
+                        full_name?: string | null;
+                        phone?: string | null;
+                        role?: 'customer' | 'admin';
+                        created_at?: string;
+                        updated_at?: string;
+                    } = {
                         id: currentUser.id,
                         email: currentUser.email,
                         full_name: data.full_name || currentUser.full_name,

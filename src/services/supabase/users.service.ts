@@ -52,12 +52,23 @@ export const usersService = {
     },
 
     async updateUser(id: string, input: UpdateUserInput): Promise<User> {
+        const updateData: any = {
+            updated_at: new Date().toISOString()
+        };
+
+        if (input.full_name !== undefined) updateData.full_name = input.full_name;
+        if (input.phone !== undefined) updateData.phone = input.phone;
+        if (input.role !== undefined) updateData.role = input.role;
+        if (input.address_line1 !== undefined) updateData.address_line1 = input.address_line1;
+        if (input.address_line2 !== undefined) updateData.address_line2 = input.address_line2;
+        if (input.city !== undefined) updateData.city = input.city;
+        if (input.postal_code !== undefined) updateData.postal_code = input.postal_code;
+        if (input.province !== undefined) updateData.province = input.province;
+        if (input.country !== undefined) updateData.country = input.country;
+
         const { data, error } = await supabase
             .from('users')
-            .update({
-                ...input,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', id)
             .select()
             .single();
