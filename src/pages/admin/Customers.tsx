@@ -72,11 +72,13 @@ export const Customers = () => {
                                 <td className="px-4 py-3 font-medium">{user.full_name || 'N/A'}</td>
                                 <td className="px-4 py-3">{user.email}</td>
                                 <td className="px-4 py-3">
-                                    <span className="text-xs uppercase tracking-wide border border-black px-2 py-1">
-                                        {user.role}
-                                    </span>
+                                        <span className="text-xs uppercase tracking-wide border border-black px-2 py-1">
+                                            {user.role || 'customer'}
+                                        </span>
                                 </td>
-                                <td className="px-4 py-3 text-gray-500">{new Date(user.created_at).toLocaleDateString()}</td>
+                                <td className="px-4 py-3 text-gray-500">
+                                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                                </td>
                                 <td className="px-4 py-3 text-right">
                                     <div className="flex items-center justify-end gap-3">
                                         <button

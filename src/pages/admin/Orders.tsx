@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useOrders } from '../../hooks/useOrders';
 import { Modal } from '../../components/ui/Modal';
 
-const statusOptions = ['pending', 'paid', 'fulfilled', 'cancelled'] as const;
+const statusOptions = ['pending', 'paid', 'processing', 'shipped', 'fulfilled', 'cancelled'] as const;
 
 export const Orders = () => {
     const { orders, loading, fetchOrders, updateOrderStatus } = useOrders();
@@ -22,7 +22,7 @@ export const Orders = () => {
     };
 
     const handleStatusChange = async (orderId: string, status: string) => {
-        const updated = await updateOrderStatus(orderId, status as any);
+        const updated = await updateOrderStatus(orderId, status);
         if (selectedOrder?.id === orderId) {
             setSelectedOrder({ ...selectedOrder, ...updated });
         }
@@ -74,12 +74,14 @@ export const Orders = () => {
                     {filteredOrders.map((order) => (
                         <tr key={order.id} className="border-b border-black last:border-0">
                             <td className="px-4 py-3 font-medium">#{order.id.slice(0, 8)}</td>
-                            <td className="px-4 py-3 text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
-                            <td className="px-4 py-3 font-medium">R{order.total}</td>
+                            <td className="px-4 py-3 text-gray-500">
+                                {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                            </td>
+                            <td className="px-4 py-3 font-medium">R{(order.total || 0).toFixed(2)}</td>
                             <td className="px-4 py-3">
-                                <span className="text-xs uppercase tracking-wide border border-black px-2 py-1">
-                                    {order.status}
-                                </span>
+                                    <span className="text-xs uppercase tracking-wide border border-black px-2 py-1">
+                                        {order.status || 'pending'}
+                                    </span>
                             </td>
                             <td className="px-4 py-3 text-right">
                                 <button onClick={() => handleViewOrder(order)} className="hover:opacity-60 transition-opacity">
@@ -105,7 +107,7 @@ export const Orders = () => {
                         <div>
                             <h4 className="text-xs uppercase tracking-wide text-gray-500 mb-2">Status</h4>
                             <select
-                                value={selectedOrder.status}
+                                value={selectedOrder.status || 'pending'}
                                 onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)}
                                 className="w-full px-3 py-2 border border-black text-sm focus:outline-none"
                             >
@@ -120,10 +122,10 @@ export const Orders = () => {
                         <div>
                             <h4 className="text-xs uppercase tracking-wide text-gray-500 mb-2">Items</h4>
                             <div className="space-y-2">
-                                {selectedOrder.items?.map((item) => (
+                                {selectedOrder.items?.map((item: any) => (
                                     <div key={item.id} className="flex items-center justify-between text-sm border-b border-black pb-2">
                                         <span>{item.quantity}× {item.product_name}</span>
-                                        <span className="font-medium">R{item.price * item.quantity}</span>
+                                        <span className="font-medium">R{(item.price * item.quantity).toFixed(2)}</span>
                                     </div>
                                 ))}
                             </div>
@@ -131,7 +133,7 @@ export const Orders = () => {
 
                         <div className="pt-4 border-t border-black flex items-center justify-between text-lg font-bold">
                             <span>Total</span>
-                            <span>R{selectedOrder.total}</span>
+                            <span>R{(selectedOrder.total || 0).toFixed(2)}</span>
                         </div>
                     </div>
                 )}

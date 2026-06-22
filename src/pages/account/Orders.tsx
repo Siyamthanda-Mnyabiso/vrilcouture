@@ -6,16 +6,18 @@ import { Loader } from '../../components/ui/Loader';
 const statusLabels: Record<string, string> = {
     pending: 'Pending',
     paid: 'Paid',
+    processing: 'Processing',
+    shipped: 'Shipped',
     fulfilled: 'Fulfilled',
     cancelled: 'Cancelled',
 };
 
-export default function Orders() {
+export default function AccountOrders() {
     const { user } = useAuth();
     const { orders, loading, error, fetchUserOrders } = useOrders();
 
     useEffect(() => {
-        if (user) {
+        if (user?.id) {
             fetchUserOrders(user.id);
         }
     }, [user]);
@@ -51,27 +53,27 @@ export default function Orders() {
                                     Order #{order.id.slice(0, 8)}
                                 </p>
                                 <span className="text-xs uppercase tracking-wide border border-black px-2 py-1">
-                                    {statusLabels[order.status]}
+                                    {statusLabels[order.status || 'pending'] || order.status}
                                 </span>
                             </div>
 
                             <p className="text-xs text-gray-500 mb-3">
-                                {new Date(order.created_at).toLocaleDateString()}
+                                {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
                             </p>
 
                             {order.items && order.items.length > 0 && (
                                 <ul className="text-sm space-y-1 mb-3">
-                                    {order.items.map((item) => (
+                                    {order.items.map((item: any) => (
                                         <li key={item.id} className="flex justify-between">
                                             <span>{item.product_name} × {item.quantity}</span>
-                                            <span>R{item.price}</span>
+                                            <span>R{(item.price || 0).toFixed(2)}</span>
                                         </li>
                                     ))}
                                 </ul>
                             )}
 
                             <p className="text-sm font-bold text-right">
-                                Total: R{order.total}
+                                Total: R{(order.total || 0).toFixed(2)}
                             </p>
                         </div>
                     ))}

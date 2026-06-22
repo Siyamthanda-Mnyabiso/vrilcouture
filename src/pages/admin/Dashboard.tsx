@@ -9,7 +9,7 @@ export const Dashboard = () => {
     const { user } = useAuth();
     const { orders, fetchOrders } = useOrders();
     const { products, fetchProducts } = useProducts();
-    const { fetchUsers } = useUsers();
+    const { users, fetchUsers } = useUsers();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -21,9 +21,10 @@ export const Dashboard = () => {
         loadData();
     }, []);
 
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
     const pendingOrders = orders.filter((o) => o.status === 'pending').length;
-    const lowStockProducts = products.filter((p) => p.stock <= 5).length;
+    const totalUsers = users.length;
+    const lowStockProducts = products.filter((p) => (p.stock || 0) <= 5).length;
 
     const stats = [
         {
@@ -32,6 +33,7 @@ export const Dashboard = () => {
         },
         { label: 'Total Orders', value: orders.length },
         { label: 'Pending Orders', value: pendingOrders },
+        { label: 'Total Customers', value: totalUsers },
         { label: 'Low Stock Items', value: lowStockProducts },
     ];
 
@@ -50,7 +52,7 @@ export const Dashboard = () => {
                 <p className="text-gray-500 mt-1 text-sm">Welcome back, {user?.email}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                 {stats.map((stat) => (
                     <div key={stat.label} className="border border-black p-5">
                         <p className="text-xs uppercase tracking-wide text-gray-500">{stat.label}</p>
@@ -95,12 +97,12 @@ export const Dashboard = () => {
                             <tr key={order.id} className="border-b border-black last:border-0">
                                 <td className="px-4 py-3">#{order.id.slice(0, 8)}</td>
                                 <td className="px-4 py-3 font-medium">
-                                    {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(order.total)}
+                                    {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(order.total || 0)}
                                 </td>
                                 <td className="px-4 py-3">
-                                    <span className="text-xs uppercase tracking-wide border border-black px-2 py-1">
-                                        {order.status}
-                                    </span>
+                                        <span className="text-xs uppercase tracking-wide border border-black px-2 py-1">
+                                            {order.status || 'pending'}
+                                        </span>
                                 </td>
                             </tr>
                         ))}

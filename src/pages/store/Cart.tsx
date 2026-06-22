@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 
 export const Cart = () => {
     const navigate = useNavigate();
-    const { items, subtotal, itemCount, clearCart } = useCart();
+    const { items, subtotal, itemCount, clearCart, updateQuantity, removeFromCart } = useCart();
 
     const tax = subtotal * 0.15;
     const shipping = subtotal >= 2550 ? 0 : 100;
@@ -60,9 +60,9 @@ export const Cart = () => {
                     {/* Cart Items */}
                     <div className="lg:col-span-2">
                         <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#D5C9B9]">
-              <span className="text-sm text-[#8A8378]">
-                {itemCount} {itemCount === 1 ? 'item' : 'items'}
-              </span>
+                            <span className="text-sm text-[#8A8378]">
+                                {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                            </span>
                             <button
                                 onClick={clearCart}
                                 className="text-sm text-[#8A8378] hover:text-[#2C2420] transition-colors"

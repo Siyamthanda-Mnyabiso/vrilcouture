@@ -1,60 +1,67 @@
-// src/hooks/useUsers.ts
-import { useState, useEffect } from 'react';
-import { usersService } from '../services/supabase/users.service';
-import type { User } from '../types/user';
+import { supabase } from '../supabase/client';
+import type { User } from '../../types/user';
 
-export const useUsers = () => {
-    const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+export const usersService = {
+    async getCurrentUser(): Promise<User | null> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
 
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            const data = await usersService.getAllUsers();
-            setUsers(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Error fetching users');
-        } finally {
-            setLoading(false);
-        }
-    };
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single()
+            .returns<User | null>();
 
-    const updateUserRole = async (id: string, role: 'customer' | 'admin') => {
-        setLoading(true);
-        try {
-            const data = await usersService.updateUserRole(id, role);
-            return data;
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Error updating user role');
-            return null;
-        } finally {
-            setLoading(false);
-        }
-    };
+        if (error) throw error;
+        return data;
+    },
 
-    const deleteUser = async (id: string) => {
-        setLoading(true);
-        try {
-            await usersService.deleteUser(id);
-            await fetchUsers(); // Refresh list
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Error deleting user');
-        } finally {
-            setLoading(false);
-        }
-    };
+    async getAllUsers(): Promise<User[]> {
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .returns<User[]>();
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
+        if (error) throw error;
+        return data || [];
+    },
 
-    return {
-        users,
-        loading,
-        error,
-        fetchUsers,
-        updateUserRole,
-        deleteUser,
-    };
+    async updateUserProfile(userId: string, updates: Partial<User>): Promise<User> {
+        const { data, error } = await supabase
+            .from('users')
+            .update(updates)
+            .eq('id', userId)
+            .select()
+            .single()
+            .returns<User>();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async updateUserRole(userId: string, role: 'customer' | 'admin'): Promise<User> {
+        return this.updateUserProfile(userId, { role });
+    },
+
+    async getUserById(userId: string): Promise<User | null> {
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single()
+            .returns<User | null>();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async deleteUser(userId: string): Promise<void> {
+        const { error } = await supabase
+            .from('users')
+            .delete()
+            .eq('id', userId);
+
+        if (error) throw error;
+    },
 };

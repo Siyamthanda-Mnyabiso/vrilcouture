@@ -46,4 +46,20 @@ export const ordersService = {
         if (error) throw error;
         return data;
     },
+
+    async updateOrderStatus(orderId: string, status: string): Promise<Order> {
+        const { data, error } = await supabase
+            .from('orders')
+            .update({
+                status,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', orderId)
+            .select()
+            .single()
+            .returns<Order>();
+
+        if (error) throw error;
+        return data;
+    },
 };

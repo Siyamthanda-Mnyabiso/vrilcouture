@@ -7,29 +7,40 @@ export const useOrders = (userId?: string) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                setLoading(true);
-                let data: Order[];
+    const fetchOrders = async () => {
+        try {
+            setLoading(true);
+            let data: Order[];
 
-                if (userId) {
-                    data = await ordersService.getOrdersByUser(userId);
-                } else {
-                    data = await ordersService.getOrders();
-                }
-
-                setOrders(data);
-                setError(null);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to fetch orders');
-            } finally {
-                setLoading(false);
+            if (userId) {
+                data = await ordersService.getOrdersByUser(userId);
+            } else {
+                data = await ordersService.getOrders();
             }
-        };
 
-        fetchOrders();
-    }, [userId]);
+            setOrders(data);
+            setError(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to fetch orders');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchUserOrders = async (userId: string) => {
+        try {
+            setLoading(true);
+            const data = await ordersService.getOrdersByUser(userId);
+            setOrders(data);
+            setError(null);
+            return data;
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to fetch user orders');
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const getOrderById = async (orderId: string) => {
         try {
@@ -59,11 +70,33 @@ export const useOrders = (userId?: string) => {
         }
     };
 
+    const updateOrderStatus = async (orderId: string, status: string) => {
+        try {
+            setLoading(true);
+            const updated = await ordersService.updateOrderStatus(orderId, status);
+            setOrders(prev => prev.map(o => o.id === orderId ? updated : o));
+            setError(null);
+            return updated;
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to update order status');
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchOrders();
+    }, [userId]);
+
     return {
         orders,
         loading,
         error,
+        fetchOrders,
+        fetchUserOrders,
         getOrderById,
         createOrder,
+        updateOrderStatus,
     };
 };
