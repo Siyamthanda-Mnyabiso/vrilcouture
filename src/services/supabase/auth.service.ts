@@ -1,7 +1,6 @@
-// src/services/supabase/auth.service.ts
 import { supabase } from './client';
 import type { User } from '../../types/user';
-import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import type { AuthChangeEvent, Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 interface UserProfile {
     id: string;
@@ -33,7 +32,9 @@ export const authService = {
             },
         });
 
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
         return data;
     },
 
@@ -43,18 +44,24 @@ export const authService = {
             password,
         });
 
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
         return data;
     },
 
     async signOut() {
         const { error } = await supabase.auth.signOut();
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
     },
 
     async getSession() {
         const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
         return data.session;
     },
 
@@ -81,6 +88,7 @@ export const authService = {
             }
 
             const email = userData.user.email || '';
+            const supabaseUser = userData.user as SupabaseUser;
 
             return {
                 id: userData.user.id,
@@ -92,10 +100,12 @@ export const authService = {
                     '',
                 phone: profile?.phone || '',
                 role: (profile?.role as 'customer' | 'admin') || 'customer',
-                created_at: profile?.created_at ||
-                    (userData.user as any).created_at ||
+                created_at:
+                    profile?.created_at ||
+                    supabaseUser.created_at ||
                     new Date().toISOString(),
-                updated_at: profile?.updated_at ||
+                updated_at:
+                    profile?.updated_at ||
                     new Date().toISOString(),
             };
         } catch (error) {
@@ -108,7 +118,9 @@ export const authService = {
         try {
             const currentUser = await authService.getCurrentUser();
             if (!currentUser) {
-                throw new Error('No user logged in');
+                const error = new Error('No user logged in');
+                console.error('Error in updateUser:', error);
+                throw error;
             }
 
             const { error: authError } = await supabase.auth.updateUser({
@@ -117,7 +129,10 @@ export const authService = {
                 },
             });
 
-            if (authError) throw authError;
+            if (authError) {
+                console.error('Error updating auth user:', authError);
+                throw authError;
+            }
 
             const updateData: {
                 full_name?: string | null;
@@ -184,7 +199,9 @@ export const authService = {
             redirectTo: `${window.location.origin}/reset-password`,
         });
 
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
     },
 
     async updatePassword(password: string) {
@@ -192,7 +209,9 @@ export const authService = {
             password,
         });
 
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
     },
 
     onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {

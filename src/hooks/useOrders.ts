@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ordersService } from '../services/supabase/orders.service';
 import type { Order } from '../types/order';
 
@@ -7,7 +7,7 @@ export const useOrders = (userId?: string) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         try {
             setLoading(true);
             let data: Order[];
@@ -25,7 +25,7 @@ export const useOrders = (userId?: string) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [userId]);
 
     const fetchUserOrders = async (userId: string) => {
         try {
@@ -87,7 +87,7 @@ export const useOrders = (userId?: string) => {
 
     useEffect(() => {
         fetchOrders();
-    }, [userId]);
+    }, [fetchOrders]);
 
     return {
         orders,

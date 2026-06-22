@@ -122,7 +122,7 @@ export const Orders = () => {
                         <div>
                             <h4 className="text-xs uppercase tracking-wide text-gray-500 mb-2">Items</h4>
                             <div className="space-y-2">
-                                {selectedOrder.items?.map((item: any) => (
+                                {selectedOrder.items?.map((item) => (
                                     <div key={item.id} className="flex items-center justify-between text-sm border-b border-black pb-2">
                                         <span>{item.quantity}× {item.product_name}</span>
                                         <span className="font-medium">R{(item.price * item.quantity).toFixed(2)}</span>

@@ -55,7 +55,8 @@ export function useProducts() {
             if (params?.sortBy === 'popular') {
                 result.sort(
                     (a, b) =>
-                        ((b as any).views ?? 0) - ((a as any).views ?? 0)
+                        ((b as { views?: number }).views ?? 0) -
+                        ((a as { views?: number }).views ?? 0)
                 );
             }
 
