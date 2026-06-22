@@ -1,22 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../../types/database.ts';
+import type { Database } from '../../types/database';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl =
+    import.meta.env.VITE_SUPABASE_URL ??
+    'https://juqasjgenypikmpilfjz.supabase.co';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn(
-        '⚠️ Supabase environment variables are missing. Using placeholder values for development.'
-    );
-}
+const supabaseAnonKey =
+    import.meta.env.VITE_SUPABASE_ANON_KEY ??
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1cWFzamdlbnlwaWttcGlsZmp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5ODMwODEsImV4cCI6MjA5NzU1OTA4MX0.J11uAuMuqVwTWYgSI3tiYea2TgHENlxKKgfeJHjDFnM';
 
-let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;
-
-export const supabase = (() => {
-    if (!supabaseInstance) {
-        const url = supabaseUrl || 'https://your-project-id.supabase.co';
-        const key = supabaseAnonKey || 'your-anon-key';
-        supabaseInstance = createClient<Database>(url, key);
-    }
-    return supabaseInstance;
-})();
+export const supabase = createClient<Database>(
+    supabaseUrl,
+    supabaseAnonKey
+);
