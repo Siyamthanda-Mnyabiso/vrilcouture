@@ -53,12 +53,11 @@ export function Navbar() {
                 {/* RIGHT */}
                 <div className="flex items-center gap-3 sm:gap-4 md:gap-5 lg:gap-6 flex-shrink-0">
 
-                    {/* 🎧 Spotify (only on xl+) */}
-                    <div className="hidden xl:block w-[280px]">
+                    <div className="w-[160px] sm:w-[220px] md:w-[260px] lg:w-[300px]">
                         <iframe
-                            title="Spotify Playlist"
+                            title="Spotify Album"
                             style={{ borderRadius: '12px' }}
-                            src="https://open.spotify.com/embed/playlist/37i9dQZF1E4nGF4HVTAw02?utm_source=generator"
+                            src="https://open.spotify.com/embed/album/0Hr4UiqidZHMMzCMTFXxzD?utm_source=generator&si=1fa8475b06814189"
                             width="100%"
                             height="80"
                             frameBorder="0"
