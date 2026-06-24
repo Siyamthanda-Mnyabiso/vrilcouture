@@ -3,13 +3,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, ShoppingBag, Menu } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
-import { useAuth } from '../../context/AuthContext';
+
 import { AccountDropdown } from './AccountDropdown';
 import { MobileNav } from './MobileNav';
 
 export function Navbar() {
     const { itemCount } = useCart();
-    const { user } = useAuth();
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
     return (
