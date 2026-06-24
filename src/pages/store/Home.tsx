@@ -37,7 +37,7 @@ export const Home = () => {
                 categoryName="Obsidian Series"
                 categorySlug="obsidian-series"
                 description="A study in structure and shadow. Designed with precision, built for presence."
-                imageUrl="/categories/1.jpg"
+                imageUrl="/categories/1.jpeg"
             />
 
 
