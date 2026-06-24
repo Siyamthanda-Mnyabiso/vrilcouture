@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 
 interface MobileNavProps {
     isOpen: boolean;
@@ -73,6 +73,15 @@ export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
                                     <p className="text-black text-sm">
                                         Hello, {user.email}
                                     </p>
+                                    {user.role === 'admin' && (
+                                        <Link
+                                            to="/admin/products"
+                                            onClick={onClose}
+                                            className="block text-black text-sm font-medium uppercase tracking-wider hover:opacity-60 transition-opacity"
+                                        >
+                                            Admin Dashboard
+                                        </Link>
+                                    )}
                                     <button
                                         onClick={() => {
                                             signOut();

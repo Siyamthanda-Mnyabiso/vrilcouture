@@ -1,42 +1,25 @@
 // src/pages/store/ProductDetails.tsx
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { mockProducts } from '../../data/mockProducts';
-import type { Product } from '../../features/products/product.types';
+import { useProducts } from '../../hooks/useProducts';
 import { useCart } from '../../hooks/useCart';
 
 export const ProductDetails = () => {
     const { slug } = useParams<{ slug: string }>();
-    const [product, setProduct] = useState<Product | null>(null);
-    const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { currentProduct: product, products, fetchProductById, fetchProducts, loading } = useProducts();
     const { addToCart } = useCart();
 
     useEffect(() => {
-        const fetchProduct = async () => {
-            if (!slug) return;
-            setLoading(true);
-            try {
-                const productData = mockProducts.find((p) => p.id === slug) ?? null;
-                if (productData) {
-                    setProduct(productData);
-
-                    if (productData.category_id) {
-                        const related = mockProducts
-                            .filter((p) => p.category_id === productData.category_id && p.id !== productData.id)
-                            .slice(0, 4);
-                        setRelatedProducts(related);
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching product:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProduct();
+        if (slug) fetchProductById(slug);
     }, [slug]);
+
+    useEffect(() => {
+        if (product?.category_id) {
+            fetchProducts({ category: product.category_id, limit: 5 });
+        }
+    }, [product?.category_id]);
+
+    const relatedProducts = products.filter((p) => p.id !== product?.id).slice(0, 4);
 
     if (loading) {
         return (

@@ -1,13 +1,13 @@
 // src/context/AuthContext.tsx
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { useUserStore } from '../store/user.store';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { supabase } from '../lib/supabase';
 import type { User } from '../types/user';
 
 interface AuthContextType {
     user: User | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string, metadata?: Record<string, any>) => Promise<void>;
+    signUp: (email: string, password: string, metadata?: { full_name?: string }) => Promise<void>;
     signOut: () => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
     updateProfile: (data: Partial<User>) => Promise<void>;
@@ -15,57 +15,87 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Demo/mock auth — no backend. Credentials are not checked; any input succeeds
-// so the storefront's login/register/account flows remain demoable.
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const { user, setUser, clearUser } = useUserStore();
-    const [loading, setLoading] = useState(false);
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    const signIn = async (email: string, _password: string) => {
+    const loadProfile = async (userId: string) => {
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (error) {
+            console.error('Failed to load user profile:', error.message);
+            setUser(null);
+            return;
+        }
+        setUser(data as User);
+    };
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+                loadProfile(session.user.id).finally(() => setLoading(false));
+            } else {
+                setLoading(false);
+            }
+        });
+
+        const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session?.user) {
+                loadProfile(session.user.id);
+            } else {
+                setUser(null);
+            }
+        });
+
+        return () => listener.subscription.unsubscribe();
+    }, []);
+
+    const signIn = async (email: string, password: string) => {
         setLoading(true);
         try {
-            const mockUser: User = {
-                id: crypto.randomUUID(),
-                email,
-                full_name: email.split('@')[0] || 'Demo User',
-                role: 'customer',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-            };
-            setUser(mockUser);
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
         } finally {
             setLoading(false);
         }
     };
 
-    const signUp = async (email: string, _password: string, metadata?: Record<string, any>) => {
+    const signUp = async (email: string, password: string, metadata?: { full_name?: string }) => {
         setLoading(true);
         try {
-            const mockUser: User = {
-                id: crypto.randomUUID(),
+            const { error } = await supabase.auth.signUp({
                 email,
-                full_name: metadata?.full_name || email.split('@')[0] || 'Demo User',
-                role: 'customer',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-            };
-            setUser(mockUser);
+                password,
+                options: { data: { full_name: metadata?.full_name } },
+            });
+            if (error) throw error;
         } finally {
             setLoading(false);
         }
     };
 
     const signOut = async () => {
-        clearUser();
+        await supabase.auth.signOut();
+        setUser(null);
     };
 
-    const resetPassword = async (_email: string) => {
-        return;
+    const resetPassword = async (email: string) => {
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        if (error) throw error;
     };
 
     const updateProfile = async (data: Partial<User>) => {
         if (!user) throw new Error('No user logged in');
-        setUser({ ...user, ...data, updated_at: new Date().toISOString() });
+        const { error } = await supabase
+            .from('users')
+            .update(data)
+            .eq('id', user.id);
+        if (error) throw error;
+        setUser({ ...user, ...data });
     };
 
     const value: AuthContextType = {
@@ -78,11 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         updateProfile,
     };
 
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextType => {

@@ -1,8 +1,6 @@
 import { useState } from 'react';
-import { mockCategories } from '../data/mockCategories';
+import { supabase } from '../lib/supabase';
 import type { Category } from '../features/categories/category.types';
-
-let categoryStore: Category[] = [...mockCategories];
 
 export function useCategories() {
     const [categories, setCategories] = useState<Category[]>([]);
@@ -13,8 +11,12 @@ export function useCategories() {
         setLoading(true);
         setError(null);
         try {
-            const data = [...categoryStore].sort((a, b) => a.name.localeCompare(b.name));
-            setCategories(data);
+            const { data, error: fetchError } = await supabase
+                .from('categories')
+                .select('*')
+                .order('name', { ascending: true });
+            if (fetchError) throw fetchError;
+            setCategories(data ?? []);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch categories');
         } finally {
@@ -23,29 +25,35 @@ export function useCategories() {
     };
 
     const createCategory = async (input: { name: string; slug?: string }) => {
-        const slug = input.slug || input.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-        const newCategory: Category = {
-            id: crypto.randomUUID(),
-            name: input.name,
-            slug,
-            created_at: new Date().toISOString(),
-        };
-        categoryStore = [...categoryStore, newCategory];
-        setCategories((prev) => [...prev, newCategory]);
-        return newCategory;
+        const slug =
+            input.slug || input.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+        const { data, error: insertError } = await supabase
+            .from('categories')
+            .insert({ name: input.name, slug })
+            .select()
+            .single();
+
+        if (insertError) throw insertError;
+        setCategories((prev) => [...prev, data]);
+        return data as Category;
     };
 
     const updateCategory = async (id: string, input: { name?: string; slug?: string }) => {
-        const existing = categoryStore.find((c) => c.id === id);
-        if (!existing) throw new Error('Category not found');
-        const updated: Category = { ...existing, ...input };
-        categoryStore = categoryStore.map((c) => (c.id === id ? updated : c));
-        setCategories((prev) => prev.map((c) => (c.id === id ? updated : c)));
-        return updated;
+        const { data, error: updateError } = await supabase
+            .from('categories')
+            .update(input)
+            .eq('id', id)
+            .select()
+            .single();
+        if (updateError) throw updateError;
+        setCategories((prev) => prev.map((c) => (c.id === id ? data : c)));
+        return data as Category;
     };
 
     const deleteCategory = async (id: string) => {
-        categoryStore = categoryStore.filter((c) => c.id !== id);
+        const { error: deleteError } = await supabase.from('categories').delete().eq('id', id);
+        if (deleteError) throw deleteError;
         setCategories((prev) => prev.filter((c) => c.id !== id));
     };
 

@@ -1,9 +1,23 @@
 // src/pages/account/Orders.tsx
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { Loader } from '../../components/ui/Loader';
-import { mockOrders } from '../../data/mockOrders';
-import type { Order } from '../../features/orders/order.types.tsx';
+
+interface OrderItem {
+    id: string;
+    product_name: string;
+    quantity: number;
+    price: number;
+}
+
+interface Order {
+    id: string;
+    status: string;
+    total: number;
+    created_at: string;
+    items?: OrderItem[];
+}
 
 const statusLabels: Record<string, string> = {
     pending: 'Pending',
@@ -20,11 +34,39 @@ export default function AccountOrders() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user?.id) {
-            // No backend — show demo orders for any signed-in user
-            setOrders(mockOrders);
-        }
-        setLoading(false);
+        const fetchOrders = async () => {
+            if (!user?.id) {
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            const { data: ordersData, error } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (error || !ordersData) {
+                console.error('Failed to fetch orders:', error?.message);
+                setLoading(false);
+                return;
+            }
+
+            const ordersWithItems = await Promise.all(
+                ordersData.map(async (order) => {
+                    const { data: items } = await supabase
+                        .from('order_items')
+                        .select('*')
+                        .eq('order_id', order.id);
+                    return { ...order, items: items ?? [] };
+                })
+            );
+
+            setOrders(ordersWithItems);
+            setLoading(false);
+        };
+
+        fetchOrders();
     }, [user]);
 
     if (loading) {

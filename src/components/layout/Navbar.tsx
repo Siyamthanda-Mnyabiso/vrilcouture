@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, ShoppingBag, Menu } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 import { AmbientAudioToggle } from '../hero/AmbientAudioToggle';
 import { AccountDropdown } from './AccountDropdown';
 import { MobileNav } from './MobileNav';

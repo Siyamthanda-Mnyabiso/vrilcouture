@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User as UserIcon, Package, UserCog, MapPin, LogOut } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+import { User as UserIcon, Package, UserCog, MapPin, LogOut, LayoutDashboard } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export function AccountDropdown() {
     const { user, signOut } = useAuth();
@@ -70,6 +70,26 @@ export function AccountDropdown() {
                                 <MapPin className="w-4 h-4" />
                                 Addresses
                             </Link>
+
+                            <Link
+                                to="/account/addresses"
+                                onClick={() => setOpen(false)}
+                                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors"
+                            >
+                                <MapPin className="w-4 h-4" />
+                                Addresses
+                            </Link>
+
+                            {user.role === 'admin' && (
+                                <Link
+                                    to="/admin/products"
+                                    onClick={() => setOpen(false)}
+                                    className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors border-t border-black"
+                                >
+                                    <LayoutDashboard className="w-4 h-4" />
+                                    Admin Dashboard
+                                </Link>
+                            )}
 
                             <button
                                 onClick={handleLogout}

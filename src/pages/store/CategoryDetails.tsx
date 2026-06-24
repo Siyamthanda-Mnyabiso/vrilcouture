@@ -1,39 +1,28 @@
 // src/pages/store/CategoryDetails.tsx
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { mockCategories } from '../../data/mockCategories';
-import { mockProducts } from '../../data/mockProducts';
+import { useCategories } from '../../hooks/useCategories';
+import { useProducts } from '../../hooks/useProducts';
 import type { Category } from '../../types/category';
-import type { Product } from '../../features/products/product.types';
 
 export const CategoryDetails = () => {
     const { slug } = useParams<{ slug: string }>();
     const [category, setCategory] = useState<Category | null>(null);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { categories, fetchCategories } = useCategories();
+    const { products, fetchProducts, loading } = useProducts();
 
     useEffect(() => {
-        const fetchCategoryAndProducts = async () => {
-            if (!slug) return;
-            setLoading(true);
-            try {
-                const categoryData = mockCategories.find((c) => c.slug === slug) ?? null;
-                if (categoryData) {
-                    setCategory(categoryData);
-                    const productsData = mockProducts.filter(
-                        (p) => p.category_id === categoryData.id
-                    );
-                    setProducts(productsData);
-                }
-            } catch (error) {
-                console.error('Error fetching category:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        fetchCategories();
+    }, []);
 
-        fetchCategoryAndProducts();
-    }, [slug]);
+    useEffect(() => {
+        if (!slug || categories.length === 0) return;
+        const categoryData = categories.find((c) => c.slug === slug) ?? null;
+        setCategory(categoryData);
+        if (categoryData) {
+            fetchProducts({ category: categoryData.id });
+        }
+    }, [slug, categories]);
 
     if (loading) {
         return (

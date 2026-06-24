@@ -11,6 +11,28 @@ export interface Product {
     stock: number;
     created_at: string;
     updated_at: string;
+    media?: ProductMedia[];
+}
+
+export interface ProductMedia {
+    id: string;
+    product_id: string;
+    media_type: 'image' | 'video';
+    url: string;
+    sort_order: number;
+    created_at: string;
+}
+
+export interface CreateProductInput {
+    name: string;
+    description?: string;
+    price: number;
+    original_price?: number;
+    image_url?: string;
+    category_id?: string;
+    brand?: string;
+    sku?: string;
+    stock: number;
 }
 
 export interface CreateProductInput {

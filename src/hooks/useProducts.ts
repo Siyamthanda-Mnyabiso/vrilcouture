@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { mockProducts } from '../data/mockProducts';
+import { supabase } from '../lib/supabase';
 import type {
     Product,
     CreateProductInput,
     UpdateProductInput,
+    ProductMedia,
 } from '../features/products/product.types';
 
 type FetchProductsParams = {
@@ -11,8 +12,6 @@ type FetchProductsParams = {
     sortBy?: 'newest' | 'price-low' | 'price-high' | 'popular';
     category?: string;
 };
-
-let productStore: Product[] = [...mockProducts];
 
 export function useProducts() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -23,40 +22,28 @@ export function useProducts() {
     const fetchProducts = async (params?: FetchProductsParams) => {
         setLoading(true);
         setError(null);
-
         try {
-            let result = [...productStore];
+            let query = supabase.from('products').select('*');
 
             if (params?.category) {
-                result = result.filter((p) => p.category_id === params.category);
+                query = query.eq('category_id', params.category);
             }
 
             if (params?.sortBy === 'newest') {
-                result.sort(
-                    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                );
-            }
-
-            if (params?.sortBy === 'price-low') {
-                result.sort((a, b) => a.price - b.price);
-            }
-
-            if (params?.sortBy === 'price-high') {
-                result.sort((a, b) => b.price - a.price);
-            }
-
-            if (params?.sortBy === 'popular') {
-                result.sort(
-                    (a, b) =>
-                        ((b as { views?: number }).views ?? 0) - ((a as { views?: number }).views ?? 0)
-                );
+                query = query.order('created_at', { ascending: false });
+            } else if (params?.sortBy === 'price-low') {
+                query = query.order('price', { ascending: true });
+            } else if (params?.sortBy === 'price-high') {
+                query = query.order('price', { ascending: false });
             }
 
             if (params?.limit) {
-                result = result.slice(0, params.limit);
+                query = query.limit(params.limit);
             }
 
-            setProducts(result);
+            const { data, error: fetchError } = await query;
+            if (fetchError) throw fetchError;
+            setProducts(data ?? []);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch products');
         } finally {
@@ -67,61 +54,94 @@ export function useProducts() {
     const fetchProductById = async (id: string) => {
         setLoading(true);
         setError(null);
-
         try {
-            const data = productStore.find((p) => p.id === id) ?? null;
-            setCurrentProduct(data);
+            const { data: product, error: fetchError } = await supabase
+                .from('products')
+                .select('*')
+                .eq('id', id)
+                .single();
+            if (fetchError) throw fetchError;
+
+            const { data: media } = await supabase
+                .from('product_media')
+                .select('*')
+                .eq('product_id', id)
+                .order('sort_order', { ascending: true });
+
+            setCurrentProduct({ ...product, media: (media ?? []) as ProductMedia[] });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch product');
+            setCurrentProduct(null);
         } finally {
             setLoading(false);
         }
     };
 
     const createProduct = async (input: CreateProductInput) => {
-        const now = new Date().toISOString();
-        const newProduct: Product = {
-            id: crypto.randomUUID(),
-            name: input.name,
-            description: input.description ?? null,
-            price: input.price,
-            original_price: input.original_price ?? null,
-            image_url: input.image_url ?? null,
-            category_id: input.category_id ?? null,
-            brand: input.brand ?? null,
-            sku: input.sku ?? null,
-            stock: input.stock ?? 0,
-            created_at: now,
-            updated_at: now,
-        };
-        productStore = [newProduct, ...productStore];
-        setProducts((prev) => [newProduct, ...prev]);
-        return newProduct;
+        const { data, error: insertError } = await supabase
+            .from('products')
+            .insert({
+                name: input.name,
+                description: input.description ?? null,
+                price: input.price,
+                original_price: input.original_price ?? null,
+                image_url: input.image_url ?? null,
+                category_id: input.category_id ?? null,
+                brand: input.brand ?? null,
+                sku: input.sku ?? null,
+                stock: input.stock ?? 0,
+            })
+            .select()
+            .single();
+
+        if (insertError) throw insertError;
+        setProducts((prev) => [data, ...prev]);
+        return data as Product;
     };
 
     const updateProduct = async (id: string, input: UpdateProductInput) => {
-        const existing = productStore.find((p) => p.id === id);
-        if (!existing) throw new Error('Product not found');
+        const { data, error: updateError } = await supabase
+            .from('products')
+            .update({ ...input, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
 
-        const updated: Product = {
-            ...existing,
-            ...input,
-            updated_at: new Date().toISOString(),
-        };
-
-        productStore = productStore.map((p) => (p.id === id ? updated : p));
-        setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
-
-        if (currentProduct?.id === id) {
-            setCurrentProduct(updated);
-        }
-
-        return updated;
+        if (updateError) throw updateError;
+        setProducts((prev) => prev.map((p) => (p.id === id ? data : p)));
+        if (currentProduct?.id === id) setCurrentProduct({ ...currentProduct, ...data });
+        return data as Product;
     };
 
     const deleteProduct = async (id: string) => {
-        productStore = productStore.filter((p) => p.id !== id);
+        const { error: deleteError } = await supabase.from('products').delete().eq('id', id);
+        if (deleteError) throw deleteError;
         setProducts((prev) => prev.filter((p) => p.id !== id));
+    };
+
+    const addProductMedia = async (
+        productId: string,
+        items: { media_type: 'image' | 'video'; url: string; sort_order?: number }[]
+    ) => {
+        const inserted: ProductMedia[] = [];
+        for (const item of items) {
+            const { data, error: insertError } = await supabase
+                .from('product_media')
+                .insert({ ...item, product_id: productId })
+                .select()
+                .single();
+            if (insertError) throw insertError;
+            inserted.push(data as ProductMedia);
+        }
+        return inserted;
+    };
+
+    const deleteProductMedia = async (mediaId: string) => {
+        const { error: deleteError } = await supabase
+            .from('product_media')
+            .delete()
+            .eq('id', mediaId);
+        if (deleteError) throw deleteError;
     };
 
     return {
@@ -134,5 +154,7 @@ export function useProducts() {
         createProduct,
         updateProduct,
         deleteProduct,
+        addProductMedia,
+        deleteProductMedia,
     };
 }
