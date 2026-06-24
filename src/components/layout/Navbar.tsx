@@ -13,10 +13,10 @@ export function Navbar() {
 
     return (
         <>
-            <nav className="flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 md:py-5 bg-white">
+            <nav className="flex items-center justify-between px-4 py-4 sm:px-6 md:px-10 lg:px-14 bg-white">
 
-                {/* Left */}
-                <div className="flex items-center gap-3">
+                {/* LEFT */}
+                <div className="flex items-center gap-3 flex-shrink-0">
                     <button
                         type="button"
                         aria-label="Open menu"
@@ -28,14 +28,14 @@ export function Navbar() {
 
                     <Link
                         to="/"
-                        className="font-display text-sm sm:text-base font-black uppercase leading-tight tracking-tight text-black"
+                        className="font-display text-sm sm:text-base font-black uppercase leading-tight tracking-tight text-black whitespace-nowrap"
                     >
                         Vril<br />Couture.
                     </Link>
                 </div>
 
-                {/* Center links */}
-                <div className="hidden md:flex items-center gap-8">
+                {/* CENTER LINKS */}
+                <div className="hidden md:flex items-center gap-6 lg:gap-8">
                     <Link to="/shop?gender=women" className="text-sm font-medium text-black hover:opacity-60">
                         Women
                     </Link>
@@ -50,11 +50,11 @@ export function Navbar() {
                     </Link>
                 </div>
 
-                {/* Right */}
-                <div className="flex items-center gap-3 sm:gap-5">
+                {/* RIGHT */}
+                <div className="flex items-center gap-3 sm:gap-4 md:gap-5 lg:gap-6 flex-shrink-0">
 
-                    {/* 🎧 Spotify Embed */}
-                    <div className="hidden lg:block w-[320px]">
+                    {/* 🎧 Spotify (only on xl+) */}
+                    <div className="hidden xl:block w-[280px]">
                         <iframe
                             title="Spotify Playlist"
                             style={{ borderRadius: '12px' }}
@@ -70,7 +70,7 @@ export function Navbar() {
                     {/* Search */}
                     <button
                         aria-label="Search"
-                        className="hidden sm:inline-flex text-black hover:opacity-60"
+                        className="hidden sm:inline-flex text-black hover:opacity-60 transition-opacity"
                     >
                         <Search className="w-5 h-5" />
                     </button>
@@ -82,7 +82,7 @@ export function Navbar() {
                     <Link
                         to="/cart"
                         aria-label="Cart"
-                        className="relative text-black hover:opacity-60"
+                        className="relative text-black hover:opacity-60 transition-opacity"
                     >
                         <ShoppingBag className="w-5 h-5" />
                         {itemCount > 0 && (
@@ -94,6 +94,7 @@ export function Navbar() {
                 </div>
             </nav>
 
+            {/* Mobile Nav */}
             <MobileNav
                 isOpen={mobileNavOpen}
                 onClose={() => setMobileNavOpen(false)}
