@@ -82,7 +82,7 @@ export function AccountDropdown() {
 
                             {user.role === 'admin' && (
                                 <Link
-                                    to="/admin/products"
+                                    to="/admin"
                                     onClick={() => setOpen(false)}
                                     className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors border-t border-black"
                                 >
