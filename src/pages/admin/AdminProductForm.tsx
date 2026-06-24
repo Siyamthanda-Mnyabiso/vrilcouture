@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
 import { uploadProductFile } from '../../lib/uploadProductMedia';
-import { supabase } from '../../lib/supabase';
+
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import type { ProductMedia } from '../../features/products/product.types';
