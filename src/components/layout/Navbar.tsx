@@ -1,4 +1,3 @@
-// src/components/layout/Navbar.tsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, ShoppingBag, Menu } from 'lucide-react';
@@ -53,17 +52,58 @@ export function Navbar() {
                 {/* RIGHT */}
                 <div className="flex items-center gap-3 sm:gap-4 md:gap-5 lg:gap-6 flex-shrink-0">
 
-                    <div className="w-[160px] sm:w-[220px] md:w-[260px] lg:w-[300px]">
-                        <iframe
-                            title="Spotify Album"
-                            style={{ borderRadius: '12px' }}
-                            src="https://open.spotify.com/embed/album/0Hr4UiqidZHMMzCMTFXxzD?utm_source=generator&si=1fa8475b06814189"
-                            width="100%"
-                            height="80"
-                            frameBorder="0"
-                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                            loading="lazy"
-                        />
+                    {/* 🎧 MUSIC FEATURE (OPTION A FIXED) */}
+                    <div className="relative group">
+
+                        {/* MOBILE */}
+                        <div className="sm:hidden">
+                            <details className="relative">
+                                <summary className="list-none cursor-pointer px-3 py-1 border border-black/10 rounded-full text-xs flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-black rounded-full animate-pulse" />
+                                    Now Playing
+                                </summary>
+
+                                <div className="absolute right-0 mt-3 w-[260px] z-50 bg-white border border-black/10 rounded-xl shadow-lg overflow-hidden">
+                                    <iframe
+                                        title="Spotify Album"
+                                        style={{ borderRadius: '12px' }}
+                                        src="https://open.spotify.com/embed/album/0Hr4UiqidZHMMzCMTFXxzD?utm_source=generator&si=1fa8475b06814189"
+                                        width="100%"
+                                        height="152"
+                                        frameBorder="0"
+                                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                        loading="lazy"
+                                    />
+                                </div>
+                            </details>
+                        </div>
+
+                        {/* DESKTOP */}
+                        <div className="hidden sm:block">
+
+                            <div className="flex items-center gap-2 px-3 py-1 border border-black/10 rounded-full cursor-pointer hover:border-black/30 transition-all">
+                                <div className="w-2 h-2 bg-black rounded-full animate-pulse" />
+                                <span className="text-xs font-medium">Now Playing</span>
+                            </div>
+
+                            <div className="absolute right-0 top-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50 pointer-events-none group-hover:pointer-events-auto">
+                                <div className="w-[260px] bg-white border border-black/10 rounded-xl shadow-lg overflow-hidden">
+
+                                    <iframe
+                                        title="Spotify Album"
+                                        style={{ borderRadius: '12px' }}
+                                        src="https://open.spotify.com/embed/album/0Hr4UiqidZHMMzCMTFXxzD?utm_source=generator&si=1fa8475b06814189"
+                                        width="100%"
+                                        height="152"
+                                        frameBorder="0"
+                                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                        loading="lazy"
+                                    />
+
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
 
                     {/* Search */}
@@ -90,6 +130,7 @@ export function Navbar() {
                             </span>
                         )}
                     </Link>
+
                 </div>
             </nav>
 
