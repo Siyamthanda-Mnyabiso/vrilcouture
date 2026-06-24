@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { Search, ShoppingBag, Menu } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../context/AuthContext';
-import { AmbientAudioToggle } from '../hero/AmbientAudioToggle';
 import { AccountDropdown } from './AccountDropdown';
 import { MobileNav } from './MobileNav';
 
@@ -12,11 +11,12 @@ export function Navbar() {
     const { itemCount } = useCart();
     const { user } = useAuth();
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
-    console.log('Current user:', user);
 
     return (
         <>
             <nav className="flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 md:py-5 bg-white">
+
+                {/* Left */}
                 <div className="flex items-center gap-3">
                     <button
                         type="button"
@@ -27,35 +27,64 @@ export function Navbar() {
                         <Menu className="w-6 h-6" />
                     </button>
 
-                    <Link to="/" className="font-display text-sm sm:text-base font-black uppercase leading-tight tracking-tight text-black">
+                    <Link
+                        to="/"
+                        className="font-display text-sm sm:text-base font-black uppercase leading-tight tracking-tight text-black"
+                    >
                         Vril<br />Couture.
                     </Link>
                 </div>
 
+                {/* Center links */}
                 <div className="hidden md:flex items-center gap-8">
-                    <Link to="/shop?gender=women" className="text-sm font-medium text-black hover:opacity-60 transition-opacity">
+                    <Link to="/shop?gender=women" className="text-sm font-medium text-black hover:opacity-60">
                         Women
                     </Link>
-                    <Link to="/shop?gender=men" className="text-sm font-medium text-black hover:opacity-60 transition-opacity">
+                    <Link to="/shop?gender=men" className="text-sm font-medium text-black hover:opacity-60">
                         Men
                     </Link>
-                    <Link to="/shop" className="text-sm font-medium text-black hover:opacity-60 transition-opacity">
+                    <Link to="/shop" className="text-sm font-medium text-black hover:opacity-60">
                         Categories
                     </Link>
-                    <Link to="/shop?sale=true" className="text-sm font-medium text-black hover:opacity-60 transition-opacity">
+                    <Link to="/shop?sale=true" className="text-sm font-medium text-black hover:opacity-60">
                         Sale
                     </Link>
                 </div>
 
+                {/* Right */}
                 <div className="flex items-center gap-3 sm:gap-5">
-                    <div className="hidden sm:block">
-                        <AmbientAudioToggle />
+
+                    {/* 🎧 Spotify Embed */}
+                    <div className="hidden lg:block w-[320px]">
+                        <iframe
+                            title="Spotify Playlist"
+                            style={{ borderRadius: '12px' }}
+                            src="https://open.spotify.com/embed/playlist/37i9dQZF1E4nGF4HVTAw02?utm_source=generator"
+                            width="100%"
+                            height="80"
+                            frameBorder="0"
+                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            loading="lazy"
+                        />
                     </div>
-                    <button aria-label="Search" className="hidden sm:inline-flex text-black hover:opacity-60 transition-opacity">
+
+                    {/* Search */}
+                    <button
+                        aria-label="Search"
+                        className="hidden sm:inline-flex text-black hover:opacity-60"
+                    >
                         <Search className="w-5 h-5" />
                     </button>
+
+                    {/* Account */}
                     <AccountDropdown />
-                    <Link to="/cart" aria-label="Cart" className="relative text-black hover:opacity-60 transition-opacity">
+
+                    {/* Cart */}
+                    <Link
+                        to="/cart"
+                        aria-label="Cart"
+                        className="relative text-black hover:opacity-60"
+                    >
                         <ShoppingBag className="w-5 h-5" />
                         {itemCount > 0 && (
                             <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
@@ -66,7 +95,10 @@ export function Navbar() {
                 </div>
             </nav>
 
-            <MobileNav isOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+            <MobileNav
+                isOpen={mobileNavOpen}
+                onClose={() => setMobileNavOpen(false)}
+            />
         </>
     );
 }
