@@ -1,3 +1,4 @@
+// src/components/product/ProductCard.tsx
 import { Link } from 'react-router-dom';
 import { ImageOff } from 'lucide-react';
 import type { Product } from '../../features/products/product.types';
@@ -8,7 +9,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
     return (
-        <Link to={`/products/${product.id}`} className="group block border border-black">
+        <Link to={`/product/${product.id}`} className="group block border border-black">
             <div className="aspect-[3/4] bg-gray-100 flex items-center justify-center overflow-hidden">
                 {product.image_url ? (
                     <img

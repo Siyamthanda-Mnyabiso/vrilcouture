@@ -1,3 +1,4 @@
+// src/routes/store.routes.tsx
 import type { RouteObject } from 'react-router-dom';
 import { Home } from '../pages/store/Home';
 import { Shop } from '../pages/store/Shop';
@@ -6,6 +7,8 @@ import { CategoryDetails } from '../pages/store/CategoryDetails';
 import { Cart } from '../pages/store/Cart';
 import { Checkout } from '../pages/store/Checkout';
 import { OrderSuccess } from '../pages/store/OrderSuccess';
+import { About } from '../pages/store/About';
+import { Contact } from '../pages/store/Contact';
 
 export const storeRoutes: RouteObject[] = [
     {
@@ -15,6 +18,14 @@ export const storeRoutes: RouteObject[] = [
     {
         path: 'shop',
         element: <Shop />,
+    },
+    {
+        path: 'about',
+        element: <About />,
+    },
+    {
+        path: 'contact',
+        element: <Contact />,
     },
     {
         path: 'product/:slug',

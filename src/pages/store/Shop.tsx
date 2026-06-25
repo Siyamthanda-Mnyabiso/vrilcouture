@@ -23,10 +23,13 @@ export const Shop = () => {
         fetchCategories();
     }, []);
 
-    // ✅ SINGLE SOURCE OF TRUTH FOR PRODUCTS
+    // ✅ SINGLE SOURCE OF TRUTH FOR PRODUCTS — refetch whenever category or sort changes
     useEffect(() => {
-        fetchProducts();
-    }, []);
+        fetchProducts({
+            category: selectedCategory || undefined,
+            sortBy: sortBy as 'newest' | 'price-low' | 'price-high' | 'popular',
+        });
+    }, [selectedCategory, sortBy]);
 
     const handleCategoryChange = (category: string) => {
         setSelectedCategory(category);
@@ -37,9 +40,6 @@ export const Shop = () => {
         else params.delete('category');
 
         setSearchParams(params);
-
-        // optional re-fetch (safe)
-        fetchProducts();
     };
 
     const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -50,9 +50,6 @@ export const Shop = () => {
         params.set('sort', value);
 
         setSearchParams(params);
-
-        // optional re-fetch (safe)
-        fetchProducts();
     };
 
     return (

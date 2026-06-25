@@ -1,3 +1,4 @@
+// src/pages/store/Cart.tsx
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
 import { CartItem } from '../../components/cart/CartItem';
@@ -73,11 +74,13 @@ export const Cart = () => {
                         <div className="divide-y divide-[#D5C9B9]">
                             {items.map((item) => (
                                 <CartItem
-                                    key={item.id}
-                                    id={item.id}
+                                    key={item.variantId}
+                                    variantId={item.variantId}
                                     name={item.name}
                                     price={item.price}
                                     quantity={item.quantity}
+                                    size={item.size}
+                                    color={item.color}
                                     image={item.image_url}
                                     onUpdateQuantity={updateQuantity}
                                     onRemove={removeItem}

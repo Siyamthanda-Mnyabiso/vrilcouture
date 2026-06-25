@@ -1,21 +1,26 @@
+// src/components/cart/CartItem.tsx
 import React from 'react';
 import { Minus, Plus, X } from 'lucide-react';
 
 interface CartItemProps {
-    id: string;
+    variantId: string;
     name: string;
     price: number;
     quantity: number;
+    size: string;
+    color: string;
     image?: string;
-    onUpdateQuantity: (id: string, quantity: number) => void;
-    onRemove: (id: string) => void;
+    onUpdateQuantity: (variantId: string, quantity: number) => void;
+    onRemove: (variantId: string) => void;
 }
 
 export const CartItem: React.FC<CartItemProps> = ({
-                                                      id,
+                                                      variantId,
                                                       name,
                                                       price,
                                                       quantity,
+                                                      size,
+                                                      color,
                                                       image,
                                                       onUpdateQuantity,
                                                       onRemove,
@@ -34,6 +39,9 @@ export const CartItem: React.FC<CartItemProps> = ({
 
             <div className="flex-1 min-w-[120px]">
                 <h4 className="text-sm font-medium text-gray-900 truncate">{name}</h4>
+                <p className="text-xs text-gray-500 mt-0.5">
+                    {size} &middot; {color}
+                </p>
                 <p className="text-sm font-semibold text-primary-600 mt-1">
                     R{price.toFixed(2)}
                 </p>
@@ -41,7 +49,7 @@ export const CartItem: React.FC<CartItemProps> = ({
 
             <div className="flex items-center gap-2 order-3 sm:order-none ml-[76px] sm:ml-0">
                 <button
-                    onClick={() => onUpdateQuantity(id, quantity - 1)}
+                    onClick={() => onUpdateQuantity(variantId, quantity - 1)}
                     className="p-1 rounded-md hover:bg-gray-100 transition-colors"
                     aria-label="Decrease quantity"
                 >
@@ -51,7 +59,7 @@ export const CartItem: React.FC<CartItemProps> = ({
           {quantity}
         </span>
                 <button
-                    onClick={() => onUpdateQuantity(id, quantity + 1)}
+                    onClick={() => onUpdateQuantity(variantId, quantity + 1)}
                     className="p-1 rounded-md hover:bg-gray-100 transition-colors"
                     aria-label="Increase quantity"
                 >
@@ -60,7 +68,7 @@ export const CartItem: React.FC<CartItemProps> = ({
             </div>
 
             <button
-                onClick={() => onRemove(id)}
+                onClick={() => onRemove(variantId)}
                 className="p-1 rounded-md hover:bg-red-50 transition-colors text-gray-400 hover:text-red-600"
                 aria-label="Remove item"
             >

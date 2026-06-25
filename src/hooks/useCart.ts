@@ -16,23 +16,27 @@ export const useCart = () => {
   const subtotal = getSubtotal();
   const itemCount = getItemCount();
 
-  // Enhanced addToCart that can accept different formats
-  const addToCart = (product: {
-    id: string;
+  const addToCart = (variant: {
+    variantId: string;
+    productId: string;
     name: string;
     price: number;
     quantity?: number;
     image_url?: string | null;
-    stock?: number;
+    stock: number;
+    size: string;
+    color: string;
   }) => {
-    // Create a properly formatted CartItem with all required fields
     const cartItem: CartItem = {
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      quantity: product.quantity || 1,
-      image_url: product.image_url || '', // Convert null to empty string
-      stock: product.stock || 0
+      variantId: variant.variantId,
+      productId: variant.productId,
+      name: variant.name,
+      price: variant.price,
+      quantity: variant.quantity || 1,
+      image_url: variant.image_url || '',
+      stock: variant.stock,
+      size: variant.size,
+      color: variant.color,
     };
 
     addItem(cartItem);
@@ -42,8 +46,8 @@ export const useCart = () => {
     items,
     subtotal,
     itemCount,
-    addToCart,    // Flexible function for components
-    addItem,      // Original function for advanced use
+    addToCart,
+    addItem,
     removeItem,
     updateQuantity,
     clearCart,

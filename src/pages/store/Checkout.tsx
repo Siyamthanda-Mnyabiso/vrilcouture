@@ -1,7 +1,9 @@
+// src/pages/store/Checkout.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { CartSummary } from '../../components/cart/CartSummary';
@@ -43,21 +45,86 @@ export const Checkout = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+
+        if (!formData.email || !formData.firstName || !formData.lastName || !formData.address) {
+            setError('Please fill in all required fields');
+            return;
+        }
+
+        if (!user) {
+            setError('You must be signed in to place an order');
+            return;
+        }
+
         setIsProcessing(true);
 
         try {
-            if (!formData.email || !formData.firstName || !formData.lastName || !formData.address) {
-                throw new Error('Please fill in all required fields');
+            // 1. Re-check stock for every variant right before committing —
+            // prevents overselling if stock changed since the product page loaded.
+            const variantIds = items.map((item) => item.variantId);
+            const { data: liveVariants, error: stockCheckError } = await supabase
+                .from('product_variants')
+                .select('id, stock')
+                .in('id', variantIds);
+
+            if (stockCheckError) throw stockCheckError;
+
+            for (const item of items) {
+                const live = liveVariants?.find((v) => v.id === item.variantId);
+                if (!live || live.stock < item.quantity) {
+                    throw new Error(
+                        `"${item.name}" (${item.size}, ${item.color}) no longer has enough stock. Please update your cart.`
+                    );
+                }
             }
 
-            // TEMP ORDER FLOW (NO PAYMENT GATEWAY)
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            // 2. Create the order
+            const { data: order, error: orderError } = await supabase
+                .from('orders')
+                .insert({
+                    user_id: user.id,
+                    status: 'pending',
+                    total,
+                })
+                .select()
+                .single();
+
+            if (orderError) throw orderError;
+
+            // 3. Create order_items, recording exactly which variant/size/color was bought
+            const orderItemsPayload = items.map((item) => ({
+                order_id: order.id,
+                product_id: item.productId,
+                product_name: item.name,
+                variant_id: item.variantId,
+                size: item.size,
+                color: item.color,
+                price: item.price,
+                quantity: item.quantity,
+            }));
+
+            const { error: itemsError } = await supabase
+                .from('order_items')
+                .insert(orderItemsPayload);
+
+            if (itemsError) throw itemsError;
+
+            // 4. Decrement stock for each variant purchased
+            for (const item of items) {
+                const live = liveVariants!.find((v) => v.id === item.variantId)!;
+                const { error: stockUpdateError } = await supabase
+                    .from('product_variants')
+                    .update({ stock: live.stock - item.quantity })
+                    .eq('id', item.variantId);
+
+                if (stockUpdateError) throw stockUpdateError;
+            }
 
             clearCart();
             navigate('/order-success');
 
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            setError(err instanceof Error ? err.message : 'An error occurred while placing your order');
         } finally {
             setIsProcessing(false);
         }
@@ -181,9 +248,14 @@ export const Checkout = () => {
 
                             <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
                                 {items.map((item) => (
-                                    <div key={item.id} className="flex items-center gap-3 text-sm">
+                                    <div key={item.variantId} className="flex items-center gap-3 text-sm">
                                         <span>{item.quantity}x</span>
-                                        <span className="flex-1">{item.name}</span>
+                                        <div className="flex-1">
+                                            <span>{item.name}</span>
+                                            <span className="block text-xs text-[#8A8378]">
+                                                {item.size} &middot; {item.color}
+                                            </span>
+                                        </div>
                                         <span>
                                             R {(item.price * item.quantity).toFixed(2)}
                                         </span>
