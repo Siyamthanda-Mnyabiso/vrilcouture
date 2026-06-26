@@ -4,6 +4,8 @@ import { App } from '../App';
 import { storeRoutes } from './store.routes';
 import { authRoutes } from './auth.routes';
 import { adminRoutes } from './admin.routes';
+import { accountRoutes } from './account.routes';
+import { searchRoutes } from './search.routes';
 
 export const router = createBrowserRouter([
     {
@@ -13,6 +15,8 @@ export const router = createBrowserRouter([
             ...storeRoutes,
             ...authRoutes,
             ...adminRoutes,
+            ...accountRoutes,
+            ...searchRoutes,
         ],
     },
 ]);

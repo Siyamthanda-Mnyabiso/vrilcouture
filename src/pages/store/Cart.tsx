@@ -15,16 +15,16 @@ export const Cart = () => {
 
     if (items.length === 0) {
         return (
-            <main className="min-h-[60vh] py-16 md:py-24">
+            <main className="min-h-[60vh] py-16 md:py-24 bg-[#FAFAF8]">
                 <div className="max-w-[1440px] mx-auto px-6">
                     <div className="flex flex-col items-center justify-center text-center">
-                        <h1 className="text-4xl md:text-5xl font-bold text-[#2C2420] tracking-wide mb-4">
+                        <h1 className="text-4xl md:text-5xl font-display uppercase tracking-tight font-light text-black mb-4">
                             Your Cart
                         </h1>
-                        <div className="w-12 h-0.5 bg-[#6B5D4F] mb-8" />
+                        <div className="w-12 h-0.5 bg-black mb-8" />
 
                         <svg
-                            className="h-24 w-24 text-[#8A8378] mb-6"
+                            className="h-24 w-24 text-black/30 mb-6"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -37,7 +37,7 @@ export const Cart = () => {
                             />
                         </svg>
 
-                        <p className="text-[#8A8378] text-lg mb-6">
+                        <p className="text-black/40 uppercase tracking-[0.4em] text-xs mb-6">
                             Your cart is empty
                         </p>
                         <Button onClick={() => navigate('/shop')}>
@@ -50,28 +50,28 @@ export const Cart = () => {
     }
 
     return (
-        <main className="py-8 md:py-12">
+        <main className="py-8 md:py-12 bg-[#FAFAF8]">
             <div className="max-w-[1440px] mx-auto px-6">
-                <h1 className="text-4xl md:text-5xl font-bold text-[#2C2420] tracking-wide mb-4">
+                <h1 className="text-4xl md:text-5xl font-display uppercase tracking-tight font-light text-black mb-4">
                     Your Cart
                 </h1>
-                <div className="w-12 h-0.5 bg-[#6B5D4F] mb-8" />
+                <div className="w-12 h-0.5 bg-black mb-8" />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Cart Items */}
                     <div className="lg:col-span-2">
-                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#D5C9B9]">
-                            <span className="text-sm text-[#8A8378]">
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-black/10">
+                            <span className="text-sm text-black/50">
                                 {itemCount} {itemCount === 1 ? 'item' : 'items'}
                             </span>
                             <button
                                 onClick={clearCart}
-                                className="text-sm text-[#8A8378] hover:text-[#2C2420] transition-colors"
+                                className="text-sm text-black/50 hover:text-black transition-colors"
                             >
                                 Clear Cart
                             </button>
                         </div>
-                        <div className="divide-y divide-[#D5C9B9]">
+                        <div className="divide-y divide-black/10">
                             {items.map((item) => (
                                 <CartItem
                                     key={item.variantId}
@@ -91,8 +91,8 @@ export const Cart = () => {
 
                     {/* Cart Summary */}
                     <div className="lg:col-span-1">
-                        <div className="bg-[#F5F1EA] p-6">
-                            <h3 className="text-lg font-medium text-[#2C2420] uppercase tracking-wider mb-4">
+                        <div className="bg-white border border-black p-6">
+                            <h3 className="text-lg font-medium text-black uppercase tracking-wider mb-4">
                                 Order Summary
                             </h3>
                             <CartSummary
@@ -111,7 +111,7 @@ export const Cart = () => {
                             </Button>
                             <button
                                 onClick={() => navigate('/shop')}
-                                className="w-full mt-3 text-center text-sm text-[#8A8378] hover:text-[#2C2420] transition-colors"
+                                className="w-full mt-3 text-center text-sm text-black/50 hover:text-black transition-colors"
                             >
                                 Continue Shopping
                             </button>

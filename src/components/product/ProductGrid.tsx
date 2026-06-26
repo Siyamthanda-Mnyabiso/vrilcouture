@@ -23,6 +23,8 @@ export function ProductGrid({
         );
     }
 
+    const displayedProducts = products.slice(0, 4);
+
     return (
         <section className="bg-[#FAFAF8] px-6 md:px-12 py-20">
 
@@ -47,8 +49,7 @@ export function ProductGrid({
                 </div>
             )}
 
-
-            {products.length === 0 ? (
+            {displayedProducts.length === 0 ? (
                 <div className="text-center py-24">
                     <p className="text-black/40 uppercase tracking-[0.4em] text-xs">
                         No pieces available
@@ -63,7 +64,7 @@ export function ProductGrid({
                     gap-y-16
                     gap-x-8
                 ">
-                    {products.map((product) => (
+                    {displayedProducts.map((product) => (
                         <div
                             key={product.id}
                             className="

@@ -1,3 +1,4 @@
+// src/components/cart/CartSummary.tsx
 import { formatCurrency } from '../../utils/currency';
 
 interface CartSummaryProps {
@@ -20,33 +21,33 @@ export const CartSummary = ({
     return (
         <div className={`space-y-3 ${className}`}>
             <div className="flex items-center justify-between text-sm">
-                <span className="text-[#8A8378]">Subtotal</span>
-                <span className="text-[#2C2420] font-medium">{format(subtotal)}</span>
+                <span className="text-black/50">Subtotal</span>
+                <span className="text-black font-medium">{format(subtotal)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-                <span className="text-[#8A8378]">Tax (15%)</span>
-                <span className="text-[#2C2420] font-medium">{format(tax)}</span>
+                <span className="text-black/50">Tax (15%)</span>
+                <span className="text-black font-medium">{format(tax)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-                <span className="text-[#8A8378]">Shipping</span>
-                <span className="text-[#2C2420] font-medium">
+                <span className="text-black/50">Shipping</span>
+                <span className="text-black font-medium">
           {shipping === 0 ? 'Free' : format(shipping)}
         </span>
             </div>
 
             {/* Free shipping threshold notice */}
             {shipping > 0 && subtotal < 2550 && (
-                <p className="text-xs text-[#8A8378] text-right">
+                <p className="text-xs text-black/50 text-right">
                     Add {format(2550 - subtotal)} more for free shipping
                 </p>
             )}
 
-            <div className="border-t border-[#D5C9B9] pt-3 mt-3">
+            <div className="border-t border-black/10 pt-3 mt-3">
                 <div className="flex items-center justify-between">
-          <span className="text-base font-medium text-[#2C2420] uppercase tracking-wide">
+          <span className="text-base font-medium text-black uppercase tracking-wide">
             Total
           </span>
-                    <span className="text-xl font-bold text-[#2C2420]">
+                    <span className="text-xl font-bold text-black">
             {format(total)}
           </span>
                 </div>
