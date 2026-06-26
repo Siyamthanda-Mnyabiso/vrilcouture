@@ -1,4 +1,5 @@
 // src/pages/store/Checkout.tsx
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
@@ -11,7 +12,7 @@ import { CartSummary } from '../../components/cart/CartSummary';
 export const Checkout = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { items, subtotal, clearCart } = useCart();
+    const { items, subtotal } = useCart();
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -39,17 +40,16 @@ export const Checkout = () => {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
-
-        if (!formData.email || !formData.firstName || !formData.lastName || !formData.address) {
-            setError('Please fill in all required fields');
-            return;
-        }
 
         if (!user) {
             setError('You must be signed in to place an order');
@@ -59,92 +59,73 @@ export const Checkout = () => {
         setIsProcessing(true);
 
         try {
-            // 1. Re-check stock for every variant right before committing —
-            // prevents overselling if stock changed since the product page loaded.
-            const variantIds = items.map((item) => item.variantId);
-            const { data: liveVariants, error: stockCheckError } = await supabase
-                .from('product_variants')
-                .select('id, stock')
-                .in('id', variantIds);
+            // 🔥 CALL EDGE FUNCTION (STITCH CHECKOUT)
+            const { data: sessionData, error: sessionError } =
+                await supabase.auth.getSession();
 
-            if (stockCheckError) throw stockCheckError;
+            if (sessionError || !sessionData.session) {
+                throw new Error('Session expired. Please log in again.');
+            }
 
-            for (const item of items) {
-                const live = liveVariants?.find((v) => v.id === item.variantId);
-                if (!live || live.stock < item.quantity) {
-                    throw new Error(
-                        `"${item.name}" (${item.size}, ${item.color}) no longer has enough stock. Please update your cart.`
-                    );
+            const response = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/checkout`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${sessionData.session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        items: items.map(item => ({
+                            productId: item.productId,
+                            variantId: item.variantId,
+                            name: item.name,
+                            quantity: item.quantity,
+                            price: item.price,
+                            size: item.size,
+                            color: item.color,
+                        })),
+                        shippingAddress: formData,
+                    }),
                 }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Checkout failed');
             }
 
-            // 2. Create the order
-            const { data: order, error: orderError } = await supabase
-                .from('orders')
-                .insert({
-                    user_id: user.id,
-                    status: 'pending',
-                    total,
-                })
-                .select()
-                .single();
-
-            if (orderError) throw orderError;
-
-            // 3. Create order_items, recording exactly which variant/size/color was bought
-            const orderItemsPayload = items.map((item) => ({
-                order_id: order.id,
-                product_id: item.productId,
-                product_name: item.name,
-                variant_id: item.variantId,
-                size: item.size,
-                color: item.color,
-                price: item.price,
-                quantity: item.quantity,
-            }));
-
-            const { error: itemsError } = await supabase
-                .from('order_items')
-                .insert(orderItemsPayload);
-
-            if (itemsError) throw itemsError;
-
-            // 4. Decrement stock for each variant purchased
-            for (const item of items) {
-                const live = liveVariants!.find((v) => v.id === item.variantId)!;
-                const { error: stockUpdateError } = await supabase
-                    .from('product_variants')
-                    .update({ stock: live.stock - item.quantity })
-                    .eq('id', item.variantId);
-
-                if (stockUpdateError) throw stockUpdateError;
-            }
-
-            clearCart();
-            navigate('/order-success');
+            // 🚀 Redirect to Stitch hosted checkout page
+            window.location.href = result.checkoutUrl;
 
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred while placing your order');
+            console.error(err);
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Failed to start checkout'
+            );
         } finally {
             setIsProcessing(false);
         }
     };
 
-    if (items.length === 0) {
-        return null;
-    }
+    if (items.length === 0) return null;
 
     return (
-        <main className="py-8 md:py-12">
+        <main className="py-8 md:py-12 bg-[#FAFAF8]">
             <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                    {/* Checkout Form */}
+                    {/* FORM */}
                     <div className="lg:col-span-2">
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#2C2420] tracking-wide mb-4">
+
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-display uppercase tracking-tight font-light text-black mb-4">
                             Checkout
                         </h1>
-                        <div className="w-12 h-0.5 bg-[#6B5D4F] mb-8" />
+
+                        <div className="w-12 h-0.5 bg-black mb-8" />
 
                         <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -155,11 +136,12 @@ export const Checkout = () => {
                             )}
 
                             <div>
-                                <h3 className="text-lg font-medium uppercase mb-4">
+                                <h3 className="text-lg font-medium uppercase mb-4 text-black">
                                     Contact Information
                                 </h3>
 
                                 <div className="space-y-4">
+
                                     <Input
                                         type="email"
                                         name="email"
@@ -176,15 +158,17 @@ export const Checkout = () => {
                                         value={formData.phone}
                                         onChange={handleInputChange}
                                     />
+
                                 </div>
                             </div>
 
                             <div>
-                                <h3 className="text-lg font-medium uppercase mb-4">
+                                <h3 className="text-lg font-medium uppercase mb-4 text-black">
                                     Shipping Address
                                 </h3>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
                                     <Input
                                         name="firstName"
                                         label="First Name"
@@ -224,6 +208,7 @@ export const Checkout = () => {
                                         value={formData.postalCode}
                                         onChange={handleInputChange}
                                     />
+
                                 </div>
                             </div>
 
@@ -233,34 +218,42 @@ export const Checkout = () => {
                                 fullWidth
                                 isLoading={isProcessing}
                             >
-                                Place Order {total > 0 && `- R ${total.toFixed(2)}`}
+                                Pay Securely - R {total.toFixed(2)}
                             </Button>
+
                         </form>
                     </div>
 
-                    {/* Order Summary */}
+                    {/* SUMMARY */}
                     <div className="lg:col-span-1">
-                        <div className="bg-[#F5F1EA] p-6 lg:sticky lg:top-24">
+                        <div className="bg-white border border-black p-6 lg:sticky lg:top-24">
 
-                            <h3 className="text-lg font-medium uppercase mb-4">
+                            <h3 className="text-lg font-medium uppercase mb-4 text-black">
                                 Order Summary
                             </h3>
 
                             <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-                                {items.map((item) => (
-                                    <div key={item.variantId} className="flex items-center gap-3 text-sm">
+
+                                {items.map(item => (
+                                    <div
+                                        key={item.variantId}
+                                        className="flex items-center gap-3 text-sm text-black"
+                                    >
                                         <span>{item.quantity}x</span>
+
                                         <div className="flex-1">
                                             <span>{item.name}</span>
-                                            <span className="block text-xs text-[#8A8378]">
-                                                {item.size} &middot; {item.color}
+                                            <span className="block text-xs text-black/50">
+                                                {item.size} · {item.color}
                                             </span>
                                         </div>
+
                                         <span>
                                             R {(item.price * item.quantity).toFixed(2)}
                                         </span>
                                     </div>
                                 ))}
+
                             </div>
 
                             <CartSummary
@@ -269,6 +262,7 @@ export const Checkout = () => {
                                 shipping={shipping}
                                 total={total}
                             />
+
                         </div>
                     </div>
 

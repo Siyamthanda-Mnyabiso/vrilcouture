@@ -1,3 +1,5 @@
+// src/utils/constants.ts
+
 // Site Configuration
 export const SITE_NAME = 'VRIL COUTURE.';
 export const SITE_DESCRIPTION = 'Premium fashion for the discerning individual';
@@ -27,15 +29,17 @@ export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 // Admin
 export const ADMIN_ROLE = 'admin';
 
-// API Endpoints - Using import.meta.env for Vite
-export const YOCO_PUBLIC_KEY = import.meta.env.VITE_YOCO_PUBLIC_KEY || 'test_public_key';
-export const YOCO_SECRET_KEY = import.meta.env.VITE_YOCO_SECRET_KEY || 'test_secret_key';
-export const YOCO_WEBHOOK_SECRET = import.meta.env.VITE_YOCO_WEBHOOK_SECRET || 'webhook_secret';
+// Yoco — only the PUBLIC key belongs on the client.
+// The secret key and webhook secret must live ONLY as server-side env vars
+// (e.g. Supabase Edge Function secrets, set via `supabase secrets set`),
+// never prefixed with VITE_, and never imported into client code.
+export const YOCO_PUBLIC_KEY = import.meta.env.VITE_YOCO_PUBLIC_KEY || '';
 
-// Supabase
+// Supabase — only the URL and ANON key belong on the client.
+// The service role key must NEVER be referenced here. It bypasses RLS
+// entirely; if it's prefixed VITE_, it ships straight to every browser.
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-export const SUPABASE_SERVICE_ROLE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
 
 // Storage Buckets
 export const STORAGE_BUCKET_PRODUCTS = 'products';
