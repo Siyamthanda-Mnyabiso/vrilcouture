@@ -46,18 +46,14 @@ export const Checkout = () => {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Validate all variants exist before proceeding.
+    // Validate all cart items exist before proceeding.
     // Cart items come in two shapes:
     //   - real variant items: variantId points to a row in product_variants
-    //   - variant-less product items: variantId === productId (see ProductDetails'
-    //     fallback path), so they must be validated against the products table.
+    //   - variant-less product items: variantId === productId (see
+    //     ProductDetails' fallback path), validated against products instead.
     const validateVariants = async () => {
         setValidatingItems(true);
 
@@ -95,25 +91,17 @@ export const Checkout = () => {
                 ...((productsResult.data ?? []).map((p: any) => [p.id, p.stock] as [string, number])),
             ]);
 
-            // Check for invalid variants
-            const invalidVariants = items.filter(
-                item => !validIds.has(item.variantId)
-            );
+            const invalidItems = items.filter(item => !validIds.has(item.variantId));
 
-            // Check for out of stock variants
-            const outOfStockVariants = items.filter(
-                item => {
-                    const stock = validStockMap.get(item.variantId);
-                    return stock !== undefined && stock < item.quantity;
-                }
-            );
+            const outOfStockItems = items.filter(item => {
+                const stock = validStockMap.get(item.variantId);
+                return stock !== undefined && stock < item.quantity;
+            });
 
-            // Handle invalid variants
-            if (invalidVariants.length > 0) {
-                const invalidNames = invalidVariants.map(item => item.name).join(', ');
+            if (invalidItems.length > 0) {
+                const invalidNames = invalidItems.map(item => item.name).join(', ');
 
-                // Remove invalid items from cart
-                invalidVariants.forEach(item => {
+                invalidItems.forEach(item => {
                     removeItem(item.variantId);
                 });
 
@@ -130,9 +118,8 @@ export const Checkout = () => {
                 return false;
             }
 
-            // Handle out of stock variants
-            if (outOfStockVariants.length > 0) {
-                const outOfStockNames = outOfStockVariants
+            if (outOfStockItems.length > 0) {
+                const outOfStockNames = outOfStockItems
                     .map(item => `${item.name} (${item.size} · ${item.color})`)
                     .join(', ');
 
@@ -169,7 +156,6 @@ export const Checkout = () => {
             return;
         }
 
-        // Validate all variants exist and are in stock
         const isValid = await validateVariants();
         if (!isValid) {
             return;
@@ -185,8 +171,6 @@ export const Checkout = () => {
                 throw new Error('Session expired. Please log in again.');
             }
 
-            // Get fresh stock data — same split as validateVariants, since
-            // cart items can be backed by either product_variants or products.
             const variantItems = items.filter(item => item.variantId !== item.productId);
             const productOnlyItems = items.filter(item => item.variantId === item.productId);
 
@@ -208,7 +192,6 @@ export const Checkout = () => {
                 ...((productStockResult.data ?? []).map((p: any) => [p.id, p.stock] as [string, number])),
             ]);
 
-            // Double-check stock before sending to edge function
             const outOfStock = items.some(item => {
                 const stock = stockMap.get(item.variantId);
                 return stock === undefined || stock < item.quantity;
@@ -219,7 +202,6 @@ export const Checkout = () => {
                 return;
             }
 
-            // Prepare request payload
             const requestBody = {
                 items: items.map(item => ({
                     productId: item.productId,
@@ -260,11 +242,7 @@ export const Checkout = () => {
                 }
             );
 
-            console.log('📡 Response Status:', response.status, response.statusText);
-            console.log('📡 Response Headers:', Object.fromEntries(response.headers.entries()));
-
             const responseText = await response.text();
-            console.log('📄 Raw Response Text:', responseText);
 
             let result;
             try {
@@ -274,7 +252,6 @@ export const Checkout = () => {
                 throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}...`);
             }
 
-            console.log('📦 Parsed Response:', result);
             setDebugInfo(result);
 
             if (!response.ok) {
@@ -291,16 +268,11 @@ export const Checkout = () => {
                 throw new Error('Payment gateway did not return a checkout URL. Please try again.');
             }
 
-            console.log('✅ Checkout URL received:', result.checkoutUrl);
-
             if (result.testMode) {
                 setTestMode(true);
-                console.warn('⚠️ Test mode active:', result.message);
-
-                setError(`⚠️ Test Mode: ${result.message || 'Redirecting to success page...'}`);
+                setError(`Test mode: ${result.message || 'Redirecting to success page...'}`);
 
                 setTimeout(() => {
-                    console.log('🔄 Redirecting to test URL:', result.checkoutUrl);
                     window.location.href = result.checkoutUrl;
                 }, 2000);
 
@@ -308,7 +280,6 @@ export const Checkout = () => {
                 return;
             }
 
-            console.log('🔄 Redirecting to Stitch:', result.checkoutUrl);
             window.location.replace(result.checkoutUrl);
 
         } catch (err) {
@@ -324,244 +295,241 @@ export const Checkout = () => {
 
     if (!isHydrated) {
         return (
-            <main className="py-8 md:py-12 bg-[#FAFAF8]">
-                <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
-                    <div className="text-center py-12">
-                        <p className="text-black/60">Loading your cart...</p>
-                    </div>
-                </div>
+            <main className="min-h-screen bg-white flex items-center justify-center">
+                <p className="text-xs uppercase tracking-[0.3em] text-black/40">Loading your cart…</p>
             </main>
         );
     }
 
     if (items.length === 0) {
         return (
-            <main className="py-8 md:py-12 bg-[#FAFAF8]">
-                <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
-                    <div className="text-center py-12">
-                        <h2 className="text-2xl font-display uppercase tracking-tight font-light text-black">
-                            Your cart is empty
-                        </h2>
-                        <p className="mt-4 text-black/60">
-                            Looks like you haven't added any items to your cart yet.
-                        </p>
-                        <Button
-                            className="mt-6"
-                            onClick={() => navigate('/store')}
-                        >
-                            Continue Shopping
-                        </Button>
-                    </div>
+            <main className="min-h-screen bg-white flex items-center justify-center px-6">
+                <div className="text-center">
+                    <h2 className="font-display uppercase tracking-tight text-3xl font-light text-black mb-3">
+                        Your cart is empty
+                    </h2>
+                    <p className="text-black/50 mb-8 text-sm">
+                        Looks like you haven't added any items to your cart yet.
+                    </p>
+                    <Button onClick={() => navigate('/store')}>Continue Shopping</Button>
                 </div>
             </main>
         );
     }
 
     return (
-        <main className="py-8 md:py-12 bg-[#FAFAF8] min-h-screen">
-            <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <main className="min-h-screen bg-white">
 
-                    {/* FORM */}
-                    <div className="lg:col-span-2">
-
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-display uppercase tracking-tight font-light text-black mb-4">
-                            Checkout
-                        </h1>
-
-                        <div className="w-12 h-0.5 bg-black mb-8" />
-
-                        <form onSubmit={handleSubmit} className="space-y-6">
-
-                            {error && (
-                                <div className={`px-4 py-3 rounded ${
-                                    testMode
-                                        ? 'bg-yellow-50 border border-yellow-200 text-yellow-700'
-                                        : 'bg-red-50 border border-red-200 text-red-600'
-                                }`}>
-                                    {error}
-                                </div>
-                            )}
-
-                            {debugInfo && (
-                                <div className="bg-gray-50 border border-gray-200 p-4 rounded text-xs font-mono overflow-auto max-h-60">
-                                    <details>
-                                        <summary className="cursor-pointer font-medium text-gray-700">
-                                            🔍 Debug Info (Click to expand)
-                                        </summary>
-                                        <pre className="mt-2 whitespace-pre-wrap">
-                                            {JSON.stringify(debugInfo, null, 2)}
-                                        </pre>
-                                    </details>
-                                </div>
-                            )}
-
-                            {validatingItems && (
-                                <div className="bg-blue-50 border border-blue-200 text-blue-600 px-4 py-3 rounded">
-                                    Validating cart items...
-                                </div>
-                            )}
-
-                            <div>
-                                <h3 className="text-lg font-medium uppercase mb-4 text-black">
-                                    Contact Information
-                                </h3>
-
-                                <div className="space-y-4">
-
-                                    <Input
-                                        type="email"
-                                        name="email"
-                                        label="Email"
-                                        value={formData.email}
-                                        onChange={handleInputChange}
-                                        required
-                                        disabled={!!user?.email}
-                                    />
-
-                                    <Input
-                                        type="tel"
-                                        name="phone"
-                                        label="Phone"
-                                        value={formData.phone}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3 className="text-lg font-medium uppercase mb-4 text-black">
-                                    Shipping Address
-                                </h3>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                                    <Input
-                                        name="firstName"
-                                        label="First Name"
-                                        value={formData.firstName}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-
-                                    <Input
-                                        name="lastName"
-                                        label="Last Name"
-                                        value={formData.lastName}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-
-                                    <div className="col-span-1 sm:col-span-2">
-                                        <Input
-                                            name="address"
-                                            label="Street Address"
-                                            value={formData.address}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-
-                                    <Input
-                                        name="city"
-                                        label="City"
-                                        value={formData.city}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-
-                                    <Input
-                                        name="postalCode"
-                                        label="Postal Code"
-                                        value={formData.postalCode}
-                                        onChange={handleInputChange}
-                                    />
-
-                                    <div className="col-span-1 sm:col-span-2">
-                                        <Input
-                                            name="country"
-                                            label="Country"
-                                            value={formData.country}
-                                            onChange={handleInputChange}
-                                            required
-                                            disabled
-                                        />
-                                    </div>
-
-                                </div>
-                            </div>
-
-                            <Button
-                                type="submit"
-                                size="lg"
-                                fullWidth
-                                isLoading={isProcessing || validatingItems}
-                                disabled={validatingItems || items.length === 0}
-                            >
-                                {validatingItems
-                                    ? 'Validating...'
-                                    : isProcessing
-                                        ? 'Processing...'
-                                        : `Pay Securely - R ${total.toFixed(2)}`
-                                }
-                            </Button>
-
-                            {testMode && (
-                                <p className="text-xs text-yellow-600 text-center">
-                                    ⚠️ Test mode active - No payment will be processed
-                                </p>
-                            )}
-
-                            <p className="text-xs text-black/40 text-center">
-                                You will be redirected to our secure payment gateway to complete your purchase.
-                            </p>
-
-                        </form>
-                    </div>
-
-                    {/* SUMMARY */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white border border-black p-6 lg:sticky lg:top-24">
-
-                            <h3 className="text-lg font-medium uppercase mb-4 text-black">
-                                Order Summary
-                            </h3>
-
-                            <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-
-                                {items.map(item => (
-                                    <div
-                                        key={item.variantId}
-                                        className="flex items-center gap-3 text-sm text-black"
-                                    >
-                                        <span className="font-medium">{item.quantity}x</span>
-
-                                        <div className="flex-1">
-                                            <span className="font-medium">{item.name}</span>
-                                            <span className="block text-xs text-black/50">
-                                                {item.size} · {item.color}
-                                            </span>
-                                        </div>
-
-                                        <span className="font-medium">
-                                            R {(item.price * item.quantity).toFixed(2)}
-                                        </span>
-                                    </div>
-                                ))}
-
-                            </div>
-
-                            <CartSummary
-                                subtotal={subtotal}
-                                tax={tax}
-                                shipping={shipping}
-                                total={total}
-                            />
-
+            {/* Minimal top bar — brand only, deliberately stripped of nav/menu
+                so nothing distracts from completing payment. */}
+            <div className="border-b border-black/10">
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-6 flex items-center justify-between">
+                    <button
+                        onClick={() => navigate('/cart')}
+                        className="text-xs uppercase tracking-[0.2em] text-black/40 hover:text-black transition-colors flex items-center gap-2"
+                    >
+                        <span aria-hidden="true">←</span> Cart
+                    </button>
+                    <div className="text-center">
+                        <div className="font-display text-sm font-semibold uppercase tracking-[0.3em] text-black">
+                            Vril
+                        </div>
+                        <div className="text-[9px] uppercase tracking-[0.35em] text-black/40 -mt-0.5">
+                            Couture Collection
                         </div>
                     </div>
+                    <div className="w-12" aria-hidden="true" />
+                </div>
+            </div>
+
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-10 md:py-16">
+
+                {/* Step indicator — purely visual signposting; the form below
+                    is a single submit, but this mirrors a Shopify Plus-style
+                    checkout's sense of progress. */}
+                <div className="mb-10 pb-5 border-b border-black/10">
+    <span className="text-xs uppercase tracking-[0.15em] text-black">
+        Checkout
+    </span>
+                </div>
+
+                {error && (
+                    <div
+                        role="alert"
+                        className={`border p-4 mb-8 text-sm tracking-wide ${
+                            testMode ? 'border-black/20 bg-black/[0.03] text-black/70' : 'border-black text-black'
+                        }`}
+                    >
+                        {error}
+                    </div>
+                )}
+
+                {debugInfo && (
+                    <div className="border border-black/10 p-4 mb-8 text-xs font-mono overflow-auto max-h-60">
+                        <details>
+                            <summary className="cursor-pointer font-medium text-black/60 uppercase tracking-wide text-[11px]">
+                                Debug info
+                            </summary>
+                            <pre className="mt-2 whitespace-pre-wrap text-black/70">
+                                {JSON.stringify(debugInfo, null, 2)}
+                            </pre>
+                        </details>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-10">
+
+                    <form onSubmit={handleSubmit} className="space-y-8">
+
+                        <section className="border border-black p-6 md:p-10">
+                            <h2 className="font-display uppercase tracking-[0.18em] text-xl mb-8">
+                                Contact Details
+                            </h2>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <Input
+                                    type="email"
+                                    name="email"
+                                    label="Email"
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    required
+                                    disabled={!!user?.email}
+                                />
+                                <Input
+                                    type="tel"
+                                    name="phone"
+                                    label="Phone"
+                                    value={formData.phone}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                                <Input
+                                    name="firstName"
+                                    label="First Name"
+                                    value={formData.firstName}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                                <Input
+                                    name="lastName"
+                                    label="Last Name"
+                                    value={formData.lastName}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
+                        </section>
+
+                        <section className="border border-black p-6 md:p-10">
+                            <h2 className="font-display uppercase tracking-[0.18em] text-xl mb-8">
+                                Shipping Address
+                            </h2>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="md:col-span-2">
+                                    <Input
+                                        name="address"
+                                        label="Street Address"
+                                        value={formData.address}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+
+                                <Input
+                                    name="city"
+                                    label="City"
+                                    value={formData.city}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                                <Input
+                                    name="postalCode"
+                                    label="Postal Code"
+                                    value={formData.postalCode}
+                                    onChange={handleInputChange}
+                                />
+                                <div className="md:col-span-2">
+                                    <Input
+                                        name="country"
+                                        label="Country"
+                                        value={formData.country}
+                                        onChange={handleInputChange}
+                                        disabled
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </section>
+
+                        <Button
+                            type="submit"
+                            size="lg"
+                            fullWidth
+                            isLoading={isProcessing || validatingItems}
+                            disabled={validatingItems || items.length === 0}
+                        >
+                            {validatingItems
+                                ? 'Validating...'
+                                : isProcessing
+                                    ? 'Processing...'
+                                    : `Pay Securely - R ${total.toFixed(2)}`}
+                        </Button>
+
+                        <p className="text-[11px] text-black/40 text-center -mt-2">
+                            You'll be redirected to our secure payment gateway to complete your purchase.
+                        </p>
+
+                    </form>
+
+                    <aside className="border border-black p-6 lg:p-8 h-fit lg:sticky lg:top-24">
+
+                        <h2 className="font-display uppercase tracking-[0.18em] text-xl mb-8">
+                            Your Order
+                        </h2>
+
+                        <div className="space-y-5 max-h-[420px] overflow-y-auto mb-8">
+                            {items.map(item => (
+                                <div key={item.variantId} className="flex gap-4 border-b border-black/10 pb-5">
+                                    <div className="relative w-20 h-24 flex-shrink-0">
+                                        {item.image_url ? (
+                                            <img
+                                                src={item.image_url}
+                                                alt={item.name}
+                                                className="w-full h-full object-cover border border-black/10"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-black/5 border border-black/10" />
+                                        )}
+                                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-black text-white text-[10px] flex items-center justify-center">
+                                            {item.quantity}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex-1">
+                                        <p className="uppercase text-sm tracking-wide">
+                                            {item.name}
+                                        </p>
+                                        <p className="text-xs text-black/50 mt-2">
+                                            {item.size} · {item.color}
+                                        </p>
+                                        <p className="text-sm mt-3">
+                                            {item.quantity} × R {item.price.toFixed(2)}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <CartSummary
+                            subtotal={subtotal}
+                            tax={tax}
+                            shipping={shipping}
+                            total={total}
+                        />
+
+                    </aside>
 
                 </div>
             </div>
