@@ -31,9 +31,9 @@ export const Checkout = () => {
         country: 'South Africa',
     });
 
-    const tax = subtotal * 0.15;
-    const shipping = subtotal >= 2550 ? 0 : 100;
-    const total = subtotal + tax + shipping;
+
+    const shipping = subtotal >= 1000 ? 0 : 100;
+    const total = subtotal + shipping;
 
     useEffect(() => {
         // Don't redirect until the persisted cart has actually finished
@@ -524,7 +524,6 @@ export const Checkout = () => {
 
                         <CartSummary
                             subtotal={subtotal}
-                            tax={tax}
                             shipping={shipping}
                             total={total}
                         />

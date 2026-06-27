@@ -3,7 +3,6 @@ import { formatCurrency } from '../../utils/currency';
 
 interface CartSummaryProps {
     subtotal: number;
-    tax: number;
     shipping: number;
     total: number;
     className?: string;
@@ -11,7 +10,6 @@ interface CartSummaryProps {
 
 export const CartSummary = ({
                                 subtotal,
-                                tax,
                                 shipping,
                                 total,
                                 className = '',
@@ -23,10 +21,6 @@ export const CartSummary = ({
             <div className="flex items-center justify-between text-sm">
                 <span className="text-black/50">Subtotal</span>
                 <span className="text-black font-medium">{format(subtotal)}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-                <span className="text-black/50">Tax (15%)</span>
-                <span className="text-black font-medium">{format(tax)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
                 <span className="text-black/50">Shipping</span>
