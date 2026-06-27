@@ -5,16 +5,24 @@ import type { CartItem } from '../store/cart.store';
 export const useCart = () => {
   const {
     items,
+    isHydrated,
     addItem,
     removeItem,
     updateQuantity,
+    updateStock,
     clearCart,
     getItemCount,
     getSubtotal,
+    getTotalItems,
+    isEmpty,
+    getItem,
+    getItemsByProduct,
   } = useCartStore();
 
   const subtotal = getSubtotal();
   const itemCount = getItemCount();
+  const totalItems = getTotalItems();
+  const isCartEmpty = isEmpty();
 
   const addToCart = (variant: {
     variantId: string;
@@ -44,13 +52,19 @@ export const useCart = () => {
 
   return {
     items,
+    isHydrated,
     subtotal,
     itemCount,
+    totalItems,
+    isCartEmpty,
     addToCart,
     addItem,
     removeItem,
     updateQuantity,
+    updateStock,
     clearCart,
+    getItem,
+    getItemsByProduct,
   };
 };
 

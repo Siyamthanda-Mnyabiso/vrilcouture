@@ -90,8 +90,10 @@ export const ProductDetails = () => {
     const maxQuantity = hasVariants ? (selectedVariant?.stock ?? 0) : product.stock;
 
     const handleAddToCart = () => {
+        console.log('🔵 handleAddToCart called. hasVariants:', hasVariants, 'selectedVariant:', selectedVariant, 'product.id:', product.id);
         if (hasVariants) {
             if (!selectedVariant) return;
+            console.log('🔵 Adding WITH variant. variantId will be:', selectedVariant.id);
             addToCart({
                 variantId: selectedVariant.id,
                 productId: product.id,
@@ -104,6 +106,7 @@ export const ProductDetails = () => {
                 color: selectedVariant.color,
             });
         } else {
+            console.log('🔵 Adding WITHOUT variant (fallback). variantId will be product.id:', product.id);
             addToCart({
                 variantId: product.id,
                 productId: product.id,
