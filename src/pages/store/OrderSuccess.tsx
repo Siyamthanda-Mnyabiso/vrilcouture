@@ -210,7 +210,7 @@ export const OrderSuccess = () => {
                     customerName: userName,
                     orderId: order.id,
                     orderTotal: order.total,
-                    transactionId: order.stitch_payment_id || '',
+                    transactionId: (order as any).stitch_payment_id || '',
                     items: formattedItems,
                 };
 
@@ -379,7 +379,7 @@ export const OrderSuccess = () => {
                 customerName: userName,
                 orderId: order.id,
                 orderTotal: order.total,
-                transactionId: order.stitch_payment_id || '',
+                transactionId: (order as any).stitch_payment_id || '',
                 items: itemsData?.map(item => ({
                     name: item.product_name,
                     quantity: item.quantity,
@@ -411,6 +411,142 @@ export const OrderSuccess = () => {
                 sessionStorage.setItem(`email_sent_${orderId}`, 'true');
             } else {
                 alert('❌ Email failed to send: ' + JSON.stringify(result));
+                setEmailError(true);
+            }
+        } catch (error) {
+            console.error('❌ Error:', error);
+            addDebug('❌ Error: ' + (error instanceof Error ? error.message : String(error)));
+            alert('Error: ' + (error instanceof Error ? error.message : String(error)));
+        }
+    };
+
+    // Temporary debug function to test email with real order data
+    const testEmailWithRealOrder = async () => {
+        try {
+            addDebug('🧪 Testing email with real order ID: ' + orderId);
+            console.log('🔍 Testing email with real order ID:', orderId);
+
+            if (!orderId) {
+                alert('No order ID found!');
+                return;
+            }
+
+            // Fetch the real order
+            const { data: order, error: orderError } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('id', orderId)
+                .single();
+
+            if (orderError || !order) {
+                console.error('❌ Error fetching order:', orderError);
+                alert('Error fetching order: ' + orderError?.message);
+                return;
+            }
+
+            console.log('📦 Order found:', order);
+            addDebug('📦 Order found: ' + JSON.stringify(order));
+
+            // Fetch order items
+            const { data: items, error: itemsError } = await supabase
+                .from('order_items')
+                .select('*')
+                .eq('order_id', orderId);
+
+            if (itemsError) {
+                console.error('❌ Error fetching items:', itemsError);
+                addDebug('❌ Error fetching items: ' + itemsError.message);
+            }
+
+            console.log('📦 Items:', items);
+            addDebug('📦 Items found: ' + (items?.length || 0));
+
+            // Get user email - FIXED: Use user.email directly or from users table
+            let email = user?.email || '';
+            let userName = 'Customer';
+
+            // Try to get from users table
+            if (user?.id) {
+                addDebug('Fetching user data for email');
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('email, full_name')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!userError && userData) {
+                    email = userData.email || email;
+                    userName = userData.full_name || userName;
+                    addDebug(`Found user: ${userName}, email: ${email}`);
+                }
+            }
+
+            // If still no email, try user metadata
+            if (!email && user) {
+                // @ts-ignore - user_metadata might exist on the user object
+                const metadata = user.user_metadata || {};
+                email = metadata.email || '';
+                userName = metadata.full_name || metadata.name || 'Customer';
+                addDebug(`Using metadata: ${userName}, email: ${email}`);
+            }
+
+            if (!email) {
+                alert('No email found for user! Please check the users table.');
+                addDebug('❌ No email found for user');
+                return;
+            }
+
+            addDebug(`📧 Using email: ${email}, name: ${userName}`);
+
+            const payload = {
+                to: email,
+                customerName: userName,
+                orderId: order.id,
+                orderTotal: order.total,
+                transactionId: (order as any).stitch_payment_id || '',
+                items: items?.map(item => ({
+                    name: item.product_name,
+                    quantity: item.quantity,
+                    price: item.price
+                })) || []
+            };
+
+            console.log('📧 Sending payload:', payload);
+            addDebug('📧 Payload: ' + JSON.stringify(payload));
+
+            // Get token
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token || import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+            if (!token) {
+                alert('No authentication token available!');
+                addDebug('❌ No token available');
+                return;
+            }
+
+            addDebug('🔑 Token obtained');
+
+            const response = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            const result = await response.json();
+            console.log('📧 Response:', result);
+            addDebug('📧 Response: ' + JSON.stringify(result));
+
+            if (response.ok && result.success) {
+                alert('✅ Email sent successfully to ' + email);
+                setEmailSent(true);
+            } else {
+                alert('❌ Failed to send email: ' + JSON.stringify(result));
                 setEmailError(true);
             }
         } catch (error) {
