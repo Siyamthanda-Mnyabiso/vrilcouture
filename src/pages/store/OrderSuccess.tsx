@@ -296,11 +296,12 @@ export const OrderSuccess = () => {
             console.log('📦 Items:', items);
             addDebug('📦 Items found: ' + (items?.length || 0));
 
-            // Get user email
-            let email = user?.email;
-            let userName = user?.user_metadata?.full_name || 'Customer';
+            // Get user email - FIXED: Use user.email directly or from users table
+            let email = user?.email || '';
+            let userName = 'Customer';
 
-            if (!email && user?.id) {
+            // Try to get from users table
+            if (user?.id) {
                 addDebug('Fetching user data for email');
                 const { data: userData, error: userError } = await supabase
                     .from('users')
@@ -309,9 +310,19 @@ export const OrderSuccess = () => {
                     .single();
 
                 if (!userError && userData) {
-                    email = userData.email;
+                    email = userData.email || email;
                     userName = userData.full_name || userName;
+                    addDebug(`Found user: ${userName}, email: ${email}`);
                 }
+            }
+
+            // If still no email, try user metadata
+            if (!email && user) {
+                // @ts-ignore - user_metadata might exist on the user object
+                const metadata = user.user_metadata || {};
+                email = metadata.email || '';
+                userName = metadata.full_name || metadata.name || 'Customer';
+                addDebug(`Using metadata: ${userName}, email: ${email}`);
             }
 
             if (!email) {
@@ -322,12 +333,13 @@ export const OrderSuccess = () => {
 
             addDebug(`📧 Using email: ${email}, name: ${userName}`);
 
+            // FIXED: Use a type-safe approach for the payload
             const payload = {
                 to: email,
                 customerName: userName,
                 orderId: order.id,
                 orderTotal: order.total,
-                transactionId: order.stitch_payment_id || '',
+                transactionId: (order as any).stitch_payment_id || '',
                 items: items?.map(item => ({
                     name: item.product_name,
                     quantity: item.quantity,
