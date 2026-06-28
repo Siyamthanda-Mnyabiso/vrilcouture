@@ -17,12 +17,6 @@ export const OrderSuccess = () => {
     const [emailError, setEmailError] = useState(false);
     const [loading, setLoading] = useState(true);
     const [cartCleared, setCartCleared] = useState(false);
-    const [debugInfo, setDebugInfo] = useState<string[]>([]);
-
-    const addDebug = (message: string) => {
-        console.log('🔍', message);
-        setDebugInfo(prev => [...prev, message]);
-    };
 
     useEffect(() => {
         const cartClearedKey = `cart_cleared_${orderId}`;
@@ -41,7 +35,6 @@ export const OrderSuccess = () => {
 
     useEffect(() => {
         if (!orderId) {
-            addDebug('No orderId, skipping');
             return;
         }
 
@@ -50,19 +43,14 @@ export const OrderSuccess = () => {
 
         const sendConfirmationEmail = async () => {
             try {
-                addDebug(`Starting for order ${orderId}`);
                 setLoading(true);
 
-                // Check if email already sent
                 if (sessionStorage.getItem(emailSentKey)) {
-                    addDebug('Email already sent (session storage)');
                     setEmailSent(true);
                     setLoading(false);
                     return;
                 }
 
-                // Fetch the order
-                addDebug(`Fetching order ${orderId}`);
                 const { data: order, error: orderError } = await supabase
                     .from('orders')
                     .select('*')
@@ -70,22 +58,16 @@ export const OrderSuccess = () => {
                     .single();
 
                 if (orderError || !order) {
-                    addDebug(`Error fetching order: ${orderError?.message}`);
                     console.error('Error fetching order:', orderError);
                     setEmailError(true);
                     setLoading(false);
                     return;
                 }
 
-                addDebug(`Order found: ${order.id}, status: ${order.status}`);
-
-                // Get user email
                 let resolvedEmail = user?.email || '';
                 let userName = 'Customer';
-                addDebug(`User email: ${resolvedEmail}`);
 
                 if (user?.id) {
-                    addDebug(`Fetching user data for ${user.id}`);
                     const { data: userRow, error: userError } = await supabase
                         .from('users')
                         .select('full_name, email')
@@ -97,13 +79,10 @@ export const OrderSuccess = () => {
                         if (userRow.email) {
                             resolvedEmail = userRow.email;
                         }
-                        addDebug(`Found user: ${userName}, email: ${resolvedEmail}`);
                     }
                 }
 
-                // If no email found, try to get from order if it has user_id
                 if (!resolvedEmail && order.user_id) {
-                    addDebug(`Fetching user from order user_id: ${order.user_id}`);
                     const { data: userData, error: userError } = await supabase
                         .from('users')
                         .select('email, full_name')
@@ -113,26 +92,21 @@ export const OrderSuccess = () => {
                     if (!userError && userData) {
                         resolvedEmail = userData.email || '';
                         userName = userData.full_name || 'Customer';
-                        addDebug(`Found user from order: ${userName}, email: ${resolvedEmail}`);
                     }
                 }
 
                 if (!resolvedEmail) {
-                    addDebug('❌ No email address found!');
                     setEmailError(true);
                     setLoading(false);
                     return;
                 }
 
-                // Fetch order items
-                addDebug(`Fetching order items for ${orderId}`);
                 const { data: itemsData, error: itemsError } = await supabase
                     .from('order_items')
                     .select('*')
                     .eq('order_id', orderId);
 
                 if (itemsError) {
-                    addDebug(`Error fetching items: ${itemsError.message}`);
                     console.error('Error fetching order items:', itemsError);
                 }
 
@@ -157,76 +131,47 @@ export const OrderSuccess = () => {
                     items: formattedItems,
                 };
 
-                addDebug(`Email payload: ${JSON.stringify(emailPayload)}`);
-
-                // Get authentication
                 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-                addDebug(`Supabase URL: ${supabaseUrl}`);
-
-                // Try to get session token
-                addDebug('Getting session...');
-                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-
-                if (sessionError) {
-                    addDebug(`Session error: ${sessionError.message}`);
-                }
-
+                const { data: sessionData } = await supabase.auth.getSession();
                 let token = sessionData?.session?.access_token;
-                addDebug(`Session token exists: ${!!token}`);
 
-                // If no session, try using service role key
                 if (!token) {
                     const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-                    addDebug(`Service role key exists: ${!!serviceKey}`);
                     if (serviceKey) {
-                        addDebug('⚠️ No session token, using service role key');
                         token = serviceKey;
                     } else {
-                        addDebug('❌ No authentication available');
                         setEmailError(true);
                         setLoading(false);
                         return;
                     }
                 }
 
-                if (!token) {
-                    addDebug('❌ Token is undefined');
-                    setEmailError(true);
-                    setLoading(false);
-                    return;
-                }
-
-                const functionUrl = `${supabaseUrl}/functions/v1/send-confirmation-email`;
-                addDebug(`Calling function: ${functionUrl}`);
-
-                const response = await fetch(functionUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(emailPayload),
-                });
+                const response = await fetch(
+                    `${supabaseUrl}/functions/v1/send-confirmation-email`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(emailPayload),
+                    }
+                );
 
                 const result = await response.json();
-                addDebug(`Response status: ${response.status}`);
-                addDebug(`Response body: ${JSON.stringify(result)}`);
 
                 if (cancelled) return;
 
                 if (response.ok && result.success) {
                     sessionStorage.setItem(emailSentKey, 'true');
                     setEmailSent(true);
-                    addDebug('✅ Email sent successfully!');
                 } else {
-                    addDebug(`❌ Failed to send email: ${JSON.stringify(result)}`);
+                    console.error('Failed to send email:', result);
                     setEmailError(true);
                 }
             } catch (error) {
                 if (!cancelled) {
-                    const errorMsg = error instanceof Error ? error.message : String(error);
-                    addDebug(`❌ Error: ${errorMsg}`);
-                    console.error('❌ Error sending email:', error);
+                    console.error('Error sending email:', error);
                     setEmailError(true);
                 }
             } finally {
@@ -236,7 +181,6 @@ export const OrderSuccess = () => {
             }
         };
 
-        // Send email immediately - no status checking
         sendConfirmationEmail();
 
         return () => {
@@ -244,23 +188,17 @@ export const OrderSuccess = () => {
         };
     }, [orderId, user, navigate]);
 
-    // Manual retry function if email fails
     const retrySendEmail = async () => {
         try {
-            addDebug('🔄 Retrying email send...');
             setLoading(true);
             setEmailError(false);
 
-            // Clear the session storage flag so it can resend
             const emailSentKey = `email_sent_${orderId}`;
             sessionStorage.removeItem(emailSentKey);
 
-            // Re-run the email sending logic by triggering the useEffect
-            // We'll just call the function directly
             const sendEmail = async () => {
                 if (!orderId) return;
 
-                // Fetch the order
                 const { data: order, error: orderError } = await supabase
                     .from('orders')
                     .select('*')
@@ -268,13 +206,11 @@ export const OrderSuccess = () => {
                     .single();
 
                 if (orderError || !order) {
-                    addDebug(`Error fetching order: ${orderError?.message}`);
                     setEmailError(true);
                     setLoading(false);
                     return;
                 }
 
-                // Get user email
                 let resolvedEmail = user?.email || '';
                 let userName = 'Customer';
 
@@ -307,13 +243,11 @@ export const OrderSuccess = () => {
                 }
 
                 if (!resolvedEmail) {
-                    addDebug('❌ No email address found!');
                     setEmailError(true);
                     setLoading(false);
                     return;
                 }
 
-                // Fetch order items
                 const { data: itemsData } = await supabase
                     .from('order_items')
                     .select('*')
@@ -372,17 +306,15 @@ export const OrderSuccess = () => {
                 if (response.ok && result.success) {
                     sessionStorage.setItem(`email_sent_${orderId}`, 'true');
                     setEmailSent(true);
-                    addDebug('✅ Email sent successfully on retry!');
                 } else {
-                    addDebug(`❌ Retry failed: ${JSON.stringify(result)}`);
+                    console.error('Retry failed:', result);
                     setEmailError(true);
                 }
             };
 
             await sendEmail();
         } catch (error) {
-            const errorMsg = error instanceof Error ? error.message : String(error);
-            addDebug(`❌ Retry error: ${errorMsg}`);
+            console.error('Retry error:', error);
             setEmailError(true);
         } finally {
             setLoading(false);
@@ -482,14 +414,13 @@ export const OrderSuccess = () => {
                         </button>
                     </div>
 
-                    {/* Retry button - only shown if email failed */}
                     {emailError && !loading && (
                         <div className="mt-4">
                             <button
                                 onClick={retrySendEmail}
                                 className="px-8 py-3 bg-blue-600 text-white text-sm font-medium uppercase tracking-wider hover:bg-blue-700 transition-colors"
                             >
-                                🔄 Retry Sending Email
+                                Retry Sending Email
                             </button>
                         </div>
                     )}
@@ -530,18 +461,6 @@ export const OrderSuccess = () => {
                             </div>
                         </div>
                     </div>
-
-                    {/* Debug info - remove after testing */}
-                    {debugInfo.length > 0 && (
-                        <div className="mt-8 p-4 bg-gray-100 rounded-lg text-left w-full max-h-60 overflow-auto">
-                            <h4 className="text-sm font-bold mb-2">Debug Info:</h4>
-                            {debugInfo.map((msg, i) => (
-                                <div key={i} className="text-xs font-mono text-gray-700 py-0.5">
-                                    {msg}
-                                </div>
-                            ))}
-                        </div>
-                    )}
                 </div>
             </div>
         </main>
