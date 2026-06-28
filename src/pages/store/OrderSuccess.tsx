@@ -17,12 +17,7 @@ export const OrderSuccess = () => {
     const [emailError, setEmailError] = useState(false);
     const [loading, setLoading] = useState(true);
     const [cartCleared, setCartCleared] = useState(false);
-    const [redirecting, setRedirecting] = useState(false);
 
-    // Clear cart once we know we have an orderId. This doesn't depend on
-    // payment status — the cart should empty once checkout was attempted,
-    // regardless of outcome, so the user doesn't see stale items if they
-    // go back to shop.
     useEffect(() => {
         const cartClearedKey = `cart_cleared_${orderId}`;
         const alreadyCleared = sessionStorage.getItem(cartClearedKey);
@@ -38,11 +33,6 @@ export const OrderSuccess = () => {
         }
     }, [orderId, clearCart, cartCleared, totalItems, items, navigate]);
 
-    // Confirm the order is actually 'paid' before doing anything else.
-    // If it isn't, send the customer home instead of showing a success
-    // screen or emailing them. We poll briefly because the Stitch webhook
-    // can take a couple seconds to land after the redirect — checking
-    // only once, immediately, risks bouncing a customer who really did pay.
     useEffect(() => {
         if (!orderId) {
             return;
@@ -99,12 +89,10 @@ export const OrderSuccess = () => {
                 if (cancelled) return;
 
                 if (!order || order.status !== 'paid') {
-                    // Payment never confirmed within the wait window.
                     navigate('/');
                     return;
                 }
 
-                // Resolve customer email/name from users table.
                 let resolvedEmail = user?.email || '';
                 let userName = 'Customer';
 
@@ -196,14 +184,6 @@ export const OrderSuccess = () => {
             cancelled = true;
         };
     }, [orderId, user, navigate]);
-
-    if (redirecting) {
-        return (
-            <main className="min-h-[60vh] py-16 md:py-24 flex items-center justify-center">
-                <p className="text-[#8A8378] text-sm">Redirecting...</p>
-            </main>
-        );
-    }
 
     return (
         <main className="min-h-[60vh] py-16 md:py-24">

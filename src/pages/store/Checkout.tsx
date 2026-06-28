@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { CartSummary } from '../../components/cart/CartSummary';
+import type { Session } from '@supabase/supabase-js';
 
 export const Checkout = () => {
     const navigate = useNavigate();
@@ -19,7 +20,6 @@ export const Checkout = () => {
     const [validatingItems, setValidatingItems] = useState(false);
     const [testMode, setTestMode] = useState(false);
     const [debugInfo, setDebugInfo] = useState<any>(null);
-    const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
 
     const [formData, setFormData] = useState({
         email: user?.email || '',
@@ -126,63 +126,17 @@ export const Checkout = () => {
         }
     };
 
-    // Function to send confirmation email
-    const sendConfirmationEmail = async (orderData: {
-        to: string;
-        toName: string;
-        orderId: string;
-        customerName: string;
-        orderTotal: number;
-        items: Array<{ name: string; quantity: number; price: number }>;
-        transactionId?: string;
-    }) => {
-        try {
-            const { data: sessionData } = await supabase.auth.getSession();
-
-            const response = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sessionData.session?.access_token || ''}`,
-                        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                    },
-                    body: JSON.stringify(orderData),
-                }
-            );
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                console.error('Email sending failed:', result);
-                throw new Error(result.error || 'Failed to send confirmation email');
-            }
-
-            console.log('✅ Confirmation email sent:', result);
-            setEmailStatus('sent');
-            return result;
-        } catch (error) {
-            console.error('Error calling email function:', error);
-            setEmailStatus('failed');
-            return { success: false, error: error.message };
-        }
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         setTestMode(false);
         setDebugInfo(null);
-        setEmailStatus('idle');
 
-        // Validate user is authenticated
         if (!user) {
             setError('You must be signed in to place an order');
             return;
         }
 
-        // Validate email is provided
         if (!formData.email || !formData.email.includes('@')) {
             setError('Please enter a valid email address');
             return;
@@ -201,7 +155,6 @@ export const Checkout = () => {
         setIsProcessing(true);
 
         try {
-            // Get fresh session with better error handling
             const { data: sessionData, error: sessionError } =
                 await supabase.auth.getSession();
 
@@ -210,8 +163,13 @@ export const Checkout = () => {
                 throw new Error('Failed to get session. Please try logging in again.');
             }
 
-            if (!sessionData.session) {
-                // Try to refresh the session
+            // Use a separate variable instead of mutating sessionData.session
+            // directly — sessionData.session is typed as `Session | null`,
+            // and TypeScript won't let it be reassigned a `Session` without
+            // narrowing, hence keeping it in its own `activeSession` const.
+            let activeSession: Session | null = sessionData.session;
+
+            if (!activeSession) {
                 const { data: refreshData, error: refreshError } =
                     await supabase.auth.refreshSession();
 
@@ -219,15 +177,7 @@ export const Checkout = () => {
                     throw new Error('Session expired. Please log in again.');
                 }
 
-                // Use the refreshed session
-                sessionData.session = refreshData.session;
-            }
-
-            // Validate email is provided
-            if (!formData.email) {
-                setError('Email is required');
-                setIsProcessing(false);
-                return;
+                activeSession = refreshData.session;
             }
 
             const requestBody = {
@@ -263,7 +213,7 @@ export const Checkout = () => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sessionData.session.access_token}`,
+                        'Authorization': `Bearer ${activeSession.access_token}`,
                         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
                     },
                     body: JSON.stringify(requestBody),
@@ -283,9 +233,7 @@ export const Checkout = () => {
             setDebugInfo(result);
 
             if (!response.ok) {
-                // Handle specific error cases
                 if (response.status === 401) {
-                    // Try to refresh the session and retry
                     const { data: refreshData, error: refreshError } =
                         await supabase.auth.refreshSession();
 
@@ -293,7 +241,6 @@ export const Checkout = () => {
                         throw new Error('Your session has expired. Please log in again.');
                     }
 
-                    // Retry the request with new token
                     const retryResponse = await fetch(
                         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/checkout`,
                         {
@@ -331,29 +278,11 @@ export const Checkout = () => {
                 throw new Error('Payment gateway did not return a checkout URL. Please try again.');
             }
 
-            // Send confirmation email (don't block checkout)
-            setEmailStatus('sending');
-            try {
-                await sendConfirmationEmail({
-                    to: formData.email,
-                    toName: `${formData.firstName} ${formData.lastName}`,
-                    orderId: result.orderId || `ORD-${Date.now()}`,
-                    customerName: `${formData.firstName} ${formData.lastName}`,
-                    orderTotal: total,
-                    items: items.map(item => ({
-                        name: item.name,
-                        quantity: item.quantity,
-                        price: item.price,
-                    })),
-                    transactionId: result.transactionId || result.paymentIntentId || undefined,
-                });
-                console.log('✅ Confirmation email sent successfully');
-            } catch (emailError) {
-                console.error('⚠️ Failed to send confirmation email:', emailError);
-                // Don't block checkout - just log the error
-            }
+            // No email is sent from here. The order is still 'pending' —
+            // the customer is only now being redirected to pay. The
+            // confirmation email is sent from OrderSuccess.tsx, and only
+            // once the order is confirmed 'paid'.
 
-            // Redirect to payment
             if (result.testMode) {
                 setTestMode(true);
                 setError(`Test mode: ${result.message || 'Redirecting to success page...'}`);
@@ -366,7 +295,7 @@ export const Checkout = () => {
 
             window.location.replace(result.checkoutUrl);
 
-        } catch (err) {
+        } catch (err: unknown) {
             console.error('❌ Checkout error:', err);
             setError(
                 err instanceof Error
@@ -438,23 +367,6 @@ export const Checkout = () => {
                         }`}
                     >
                         {error}
-                    </div>
-                )}
-
-                {/* Email Status Indicator */}
-                {emailStatus === 'sending' && (
-                    <div className="border border-black/20 bg-black/[0.03] p-4 mb-8 text-sm tracking-wide text-black/70">
-                        Sending confirmation email...
-                    </div>
-                )}
-                {emailStatus === 'sent' && (
-                    <div className="border border-green-500/30 bg-green-50 p-4 mb-8 text-sm tracking-wide text-green-700">
-                        ✓ Confirmation email sent to {formData.email}
-                    </div>
-                )}
-                {emailStatus === 'failed' && (
-                    <div className="border border-yellow-500/30 bg-yellow-50 p-4 mb-8 text-sm tracking-wide text-yellow-700">
-                        ⚠️ Could not send confirmation email. We'll email you shortly with your order details.
                     </div>
                 )}
 
