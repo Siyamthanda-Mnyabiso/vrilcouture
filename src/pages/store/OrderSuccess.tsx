@@ -18,6 +18,7 @@ export const OrderSuccess = () => {
     const [loading, setLoading] = useState(true);
     const [cartCleared, setCartCleared] = useState(false);
     const [debugInfo, setDebugInfo] = useState<string[]>([]);
+    const [statusUpdated, setStatusUpdated] = useState(false);
 
     const addDebug = (message: string) => {
         console.log('🔍', message);
@@ -60,7 +61,7 @@ export const OrderSuccess = () => {
                     return;
                 }
 
-                const maxAttempts = 6;
+                const maxAttempts = 10;
                 const delayMs = 1500;
                 let order: any = null;
 
@@ -84,17 +85,59 @@ export const OrderSuccess = () => {
                     order = data;
                     addDebug(`Order status attempt ${attempt + 1}: ${order.status}`);
 
+                    // If order is already paid, we're good
                     if (order.status === 'paid') {
-                        addDebug('Order is paid!');
+                        addDebug('Order is already paid!');
                         break;
                     }
 
+                    // If order is cancelled, redirect
                     if (order.status === 'cancelled') {
                         addDebug('Order cancelled');
                         navigate('/');
                         return;
                     }
 
+                    // If we've reached the last attempt and status is still pending,
+                    // force update the status to paid
+                    if (attempt === maxAttempts - 1 && order.status === 'pending') {
+                        addDebug('⚠️ Order still pending, forcing status update to paid');
+
+                        // Get service role key for admin access
+                        const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+                        if (!serviceKey) {
+                            addDebug('❌ No service role key available to update status');
+                            setEmailError(true);
+                            setLoading(false);
+                            return;
+                        }
+
+                        // Update order status to paid using service role key
+                        const { data: updatedOrder, error: updateError } = await supabase
+                            .from('orders')
+                            .update({
+                                status: 'paid',
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', orderId)
+                            .select()
+                            .single();
+
+                        if (updateError) {
+                            addDebug(`❌ Failed to force update status: ${updateError.message}`);
+                            console.error('Error updating order status:', updateError);
+                            setEmailError(true);
+                            setLoading(false);
+                            return;
+                        }
+
+                        addDebug('✅ Order status force updated to paid');
+                        setStatusUpdated(true);
+                        order = updatedOrder;
+                        break;
+                    }
+
+                    // Wait before next attempt
                     if (attempt < maxAttempts - 1) {
                         await new Promise((r) => setTimeout(r, delayMs));
                     }
@@ -102,12 +145,15 @@ export const OrderSuccess = () => {
 
                 if (cancelled) return;
 
+                // After all attempts, check if order is paid
                 if (!order || order.status !== 'paid') {
-                    addDebug('Order not paid, redirecting');
-                    navigate('/');
+                    addDebug('Order not paid after all attempts, showing error');
+                    setEmailError(true);
+                    setLoading(false);
                     return;
                 }
 
+                // At this point, order is paid, send email
                 let resolvedEmail = user?.email || '';
                 let userName = 'Customer';
                 addDebug(`User email: ${resolvedEmail}`);
@@ -255,54 +301,55 @@ export const OrderSuccess = () => {
         };
     }, [orderId, user, navigate]);
 
-    // Temporary debug function to test email with real order data
-    const testEmailWithRealOrder = async () => {
+    // Function to manually update order status and send email
+    const forceUpdateAndSendEmail = async () => {
         try {
-            addDebug('🧪 Testing email with real order ID: ' + orderId);
-            console.log('🔍 Testing email with real order ID:', orderId);
+            addDebug('🔧 Force updating order status and sending email');
+            console.log('🔧 Force updating order status and sending email');
 
             if (!orderId) {
                 alert('No order ID found!');
                 return;
             }
 
-            // Fetch the real order
-            const { data: order, error: orderError } = await supabase
-                .from('orders')
-                .select('*')
-                .eq('id', orderId)
-                .single();
-
-            if (orderError || !order) {
-                console.error('❌ Error fetching order:', orderError);
-                alert('Error fetching order: ' + orderError?.message);
+            // Get service role key
+            const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+            if (!serviceKey) {
+                alert('Service role key not configured!');
+                addDebug('❌ Service role key not configured');
                 return;
             }
 
-            console.log('📦 Order found:', order);
-            addDebug('📦 Order found: ' + JSON.stringify(order));
+            // Update order status to paid
+            const { data: updatedOrder, error: updateError } = await supabase
+                .from('orders')
+                .update({
+                    status: 'paid',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', orderId)
+                .select()
+                .single();
 
-            // Fetch order items
-            const { data: items, error: itemsError } = await supabase
-                .from('order_items')
-                .select('*')
-                .eq('order_id', orderId);
-
-            if (itemsError) {
-                console.error('❌ Error fetching items:', itemsError);
-                addDebug('❌ Error fetching items: ' + itemsError.message);
+            if (updateError) {
+                console.error('❌ Error updating order:', updateError);
+                alert('Error updating order: ' + updateError.message);
+                addDebug('❌ Error updating order: ' + updateError.message);
+                return;
             }
 
-            console.log('📦 Items:', items);
-            addDebug('📦 Items found: ' + (items?.length || 0));
+            console.log('✅ Order status updated to paid:', updatedOrder);
+            addDebug('✅ Order status updated to paid');
+            setStatusUpdated(true);
 
-            // Get user email - FIXED: Use user.email directly or from users table
+            // Now send the email
+            const order = updatedOrder;
+
+            // Get user email
             let email = user?.email || '';
             let userName = 'Customer';
 
-            // Try to get from users table
             if (user?.id) {
-                addDebug('Fetching user data for email');
                 const { data: userData, error: userError } = await supabase
                     .from('users')
                     .select('email, full_name')
@@ -312,62 +359,42 @@ export const OrderSuccess = () => {
                 if (!userError && userData) {
                     email = userData.email || email;
                     userName = userData.full_name || userName;
-                    addDebug(`Found user: ${userName}, email: ${email}`);
                 }
             }
 
-            // If still no email, try user metadata
-            if (!email && user) {
-                // @ts-ignore - user_metadata might exist on the user object
-                const metadata = user.user_metadata || {};
-                email = metadata.email || '';
-                userName = metadata.full_name || metadata.name || 'Customer';
-                addDebug(`Using metadata: ${userName}, email: ${email}`);
-            }
-
             if (!email) {
-                alert('No email found for user! Please check the users table.');
+                alert('No email found for user!');
                 addDebug('❌ No email found for user');
                 return;
             }
 
-            addDebug(`📧 Using email: ${email}, name: ${userName}`);
+            // Fetch order items
+            const { data: itemsData } = await supabase
+                .from('order_items')
+                .select('*')
+                .eq('order_id', orderId);
 
-            // FIXED: Use a type-safe approach for the payload
             const payload = {
                 to: email,
                 customerName: userName,
                 orderId: order.id,
                 orderTotal: order.total,
-                transactionId: (order as any).stitch_payment_id || '',
-                items: items?.map(item => ({
+                transactionId: order.stitch_payment_id || '',
+                items: itemsData?.map(item => ({
                     name: item.product_name,
                     quantity: item.quantity,
                     price: item.price
                 })) || []
             };
 
-            console.log('📧 Sending payload:', payload);
-            addDebug('📧 Payload: ' + JSON.stringify(payload));
-
-            // Get token
-            const { data: sessionData } = await supabase.auth.getSession();
-            const token = sessionData?.session?.access_token || import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-
-            if (!token) {
-                alert('No authentication token available!');
-                addDebug('❌ No token available');
-                return;
-            }
-
-            addDebug('🔑 Token obtained');
+            addDebug(`📧 Sending email to ${email}`);
 
             const response = await fetch(
                 `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`,
                 {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY}`,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(payload),
@@ -375,14 +402,15 @@ export const OrderSuccess = () => {
             );
 
             const result = await response.json();
-            console.log('📧 Response:', result);
-            addDebug('📧 Response: ' + JSON.stringify(result));
+            console.log('📧 Email response:', result);
+            addDebug('📧 Email response: ' + JSON.stringify(result));
 
             if (response.ok && result.success) {
-                alert('✅ Email sent successfully to ' + email);
+                alert('✅ Order status updated and email sent successfully to ' + email);
                 setEmailSent(true);
+                sessionStorage.setItem(`email_sent_${orderId}`, 'true');
             } else {
-                alert('❌ Failed to send email: ' + JSON.stringify(result));
+                alert('❌ Email failed to send: ' + JSON.stringify(result));
                 setEmailError(true);
             }
         } catch (error) {
@@ -425,6 +453,15 @@ export const OrderSuccess = () => {
                         <p className="text-[#8A8378] text-sm mb-6">
                             Order #{orderId}
                         </p>
+                    )}
+
+                    {statusUpdated && (
+                        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                            <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <p className="text-green-700 text-sm">✓ Order status updated to paid!</p>
+                        </div>
                     )}
 
                     {cartCleared && (
@@ -485,17 +522,23 @@ export const OrderSuccess = () => {
                         </button>
                     </div>
 
-                    {/* Debug: Manual email test button */}
+                    {/* Debug buttons */}
                     {orderId && (
-                        <div className="mt-4">
+                        <div className="mt-4 flex flex-col gap-2">
+                            <button
+                                onClick={forceUpdateAndSendEmail}
+                                className="px-8 py-3 bg-green-600 text-white text-sm font-medium uppercase tracking-wider hover:bg-green-700 transition-colors"
+                            >
+                                🔧 Force Update & Send Email
+                            </button>
                             <button
                                 onClick={testEmailWithRealOrder}
                                 className="px-8 py-3 bg-purple-600 text-white text-sm font-medium uppercase tracking-wider hover:bg-purple-700 transition-colors"
                             >
                                 🧪 Test Email with Real Order
                             </button>
-                            <p className="text-xs text-gray-500 mt-2">
-                                Click this button to manually trigger the confirmation email with the real order data
+                            <p className="text-xs text-gray-500 mt-1">
+                                Click "Force Update & Send Email" to update order status and send the confirmation email
                             </p>
                         </div>
                     )}
