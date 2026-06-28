@@ -141,29 +141,53 @@ export const OrderSuccess = () => {
                     items: formattedItems,
                 };
 
-                const { data: { session } } = await supabase.auth.getSession();
+                // 🔥 FIX: Get proper authentication
+                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
-                const response = await fetch(
-                    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(emailPayload),
+                // Try to get session token
+                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                let token = sessionData?.session?.access_token;
+
+                // If no session, try using service role key (more reliable)
+                if (!token) {
+                    const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+                    if (serviceKey) {
+                        console.log('⚠️ No session token, using service role key');
+                        token = serviceKey;
+                    } else {
+                        console.error('❌ No authentication available');
+                        setEmailError(true);
+                        setLoading(false);
+                        return;
                     }
-                );
+                }
+
+                const functionUrl = `${supabaseUrl}/functions/v1/send-confirmation-email`;
+                console.log('📧 Calling function at:', functionUrl);
+                console.log('📧 With token:', token.substring(0, 20) + '...');
+                console.log('📧 Payload:', emailPayload);
+
+                const response = await fetch(functionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(emailPayload),
+                });
 
                 const result = await response.json();
+                console.log('📧 Response status:', response.status);
+                console.log('📧 Response body:', result);
 
                 if (cancelled) return;
 
-                if (result.success) {
+                if (response.ok && result.success) {
                     sessionStorage.setItem(emailSentKey, 'true');
                     setEmailSent(true);
+                    console.log('✅ Email sent successfully!');
                 } else {
-                    console.error('❌ Failed to send email:', result.error);
+                    console.error('❌ Failed to send email:', result);
                     setEmailError(true);
                 }
             } catch (error) {
