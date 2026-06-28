@@ -17,16 +17,12 @@ export const OrderSuccess = () => {
     const [emailError, setEmailError] = useState(false);
     const [loading, setLoading] = useState(true);
     const [cartCleared, setCartCleared] = useState(false);
-    const [orderStatus, setOrderStatus] = useState<string>('pending');
-    const [orderData, setOrderData] = useState<any>(null);
 
-    // Clear cart when order success page loads
     useEffect(() => {
         const cartClearedKey = `cart_cleared_${orderId}`;
         const alreadyCleared = sessionStorage.getItem(cartClearedKey);
 
         if (orderId && !cartCleared && !alreadyCleared) {
-            console.log('🛒 Clearing cart...');
             clearCart();
             setCartCleared(true);
             sessionStorage.setItem(cartClearedKey, 'true');
@@ -37,7 +33,6 @@ export const OrderSuccess = () => {
         }
     }, [orderId, clearCart, cartCleared, totalItems, items, navigate]);
 
-    // Send confirmation email
     useEffect(() => {
         if (!orderId) {
             return;
@@ -46,75 +41,76 @@ export const OrderSuccess = () => {
         let cancelled = false;
         const emailSentKey = `email_sent_${orderId}`;
 
-        // Check if email was already sent for this order
-        if (sessionStorage.getItem(emailSentKey)) {
-            setEmailSent(true);
-            setLoading(false);
-            return;
-        }
-
-        const sendEmail = async () => {
+        const confirmPaymentAndSendEmail = async () => {
             try {
                 setLoading(true);
 
-                // 1. Fetch order details
-                const { data: order, error: orderError } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .eq('id', orderId)
-                    .single();
-
-                if (orderError || !order) {
-                    console.error('Error fetching order:', orderError);
-                    setEmailError(true);
+                if (sessionStorage.getItem(emailSentKey)) {
+                    setEmailSent(true);
                     setLoading(false);
                     return;
                 }
 
-                setOrderData(order);
-                setOrderStatus(order.status);
+                const maxAttempts = 6;
+                const delayMs = 1500;
+                let order: any = null;
 
-                console.log('📦 Order data:', order);
-                console.log('📦 Order status:', order.status);
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    if (cancelled) return;
 
-                // 2. Get customer email and name
-                let customerEmail = user?.email || '';
-                let customerName = 'Customer';
+                    const { data, error: orderError } = await supabase
+                        .from('orders')
+                        .select('*')
+                        .eq('id', orderId)
+                        .single();
 
-                // Try to get from order if stored
-                if (order.customer_email) {
-                    customerEmail = order.customer_email;
-                }
+                    if (orderError || !data) {
+                        console.error('Error fetching order:', orderError);
+                        navigate('/');
+                        return;
+                    }
 
-                // Try to get customer name from order
-                if (order.customer_name) {
-                    customerName = order.customer_name;
-                } else if (user?.id) {
-                    // Try to get from profiles table (if it exists)
-                    try {
-                        const { data: profile, error: profileError } = await supabase
-                            .from('profiles')
-                            .select('full_name, email')
-                            .eq('id', user.id)
-                            .single();
+                    order = data;
 
-                        if (!profileError && profile) {
-                            customerName = profile.full_name || 'Customer';
-                            if (profile.email) {
-                                customerEmail = profile.email;
-                            }
-                        }
-                    } catch (e) {
-                        console.log('⚠️ Could not fetch profile, using fallback');
-                        // Use email from auth as fallback
-                        customerName = user.email?.split('@')[0] || 'Customer';
+                    if (order.status === 'paid') {
+                        break;
+                    }
+
+                    if (order.status === 'cancelled') {
+                        navigate('/');
+                        return;
+                    }
+
+                    if (attempt < maxAttempts - 1) {
+                        await new Promise((r) => setTimeout(r, delayMs));
                     }
                 }
 
-                console.log('📧 Customer email:', customerEmail);
-                console.log('📧 Customer name:', customerName);
+                if (cancelled) return;
 
-                // 3. Fetch order items
+                if (!order || order.status !== 'paid') {
+                    navigate('/');
+                    return;
+                }
+
+                let resolvedEmail = user?.email || '';
+                let userName = 'Customer';
+
+                if (user?.id) {
+                    const { data: userRow, error: userError } = await supabase
+                        .from('users')
+                        .select('full_name, email')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (!userError && userRow) {
+                        userName = userRow.full_name || 'Customer';
+                        if (userRow.email) {
+                            resolvedEmail = userRow.email;
+                        }
+                    }
+                }
+
                 const { data: itemsData, error: itemsError } = await supabase
                     .from('order_items')
                     .select('*')
@@ -124,53 +120,29 @@ export const OrderSuccess = () => {
                     console.error('Error fetching order items:', itemsError);
                 }
 
-                // 4. Format items
-                let formattedItems = [];
-                if (itemsData && itemsData.length > 0) {
-                    formattedItems = itemsData.map((item: any) => ({
-                        name: item.product_name || 'Product',
-                        quantity: item.quantity || 1,
-                        price: parseFloat(item.price) || 0,
-                        size: item.size || '',
-                        color: item.color || '',
-                    }));
-                } else {
-                    // Fallback if no items found
-                    console.warn('⚠️ No items found in order_items table');
-                    formattedItems = [{
+                const formattedItems = (itemsData && itemsData.length > 0)
+                    ? itemsData.map((item) => ({
+                        name: item.product_name,
+                        quantity: item.quantity,
+                        price: item.price,
+                    }))
+                    : [{
                         name: 'Order Items',
                         quantity: 1,
-                        price: parseFloat(order.total) || 0,
-                        size: '',
-                        color: '',
+                        price: order.total,
                     }];
-                }
 
-                console.log('📦 Formatted items:', formattedItems);
-
-                // 5. Build email payload
                 const emailPayload = {
-                    to: customerEmail,
-                    customerName: customerName,
+                    to: resolvedEmail,
+                    customerName: userName,
                     orderId: order.id,
-                    orderTotal: parseFloat(order.total) || 0,
+                    orderTotal: order.total,
                     transactionId: order.stitch_payment_id || '',
                     items: formattedItems,
-                    order_date: new Date().toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }),
                 };
 
-                console.log('📧 Sending email with payload:', JSON.stringify(emailPayload, null, 2));
-
-                // 6. Get session for authorization
                 const { data: { session } } = await supabase.auth.getSession();
 
-                // 7. Call the Edge Function to send email
                 const response = await fetch(
                     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`,
                     {
@@ -188,7 +160,6 @@ export const OrderSuccess = () => {
                 if (cancelled) return;
 
                 if (result.success) {
-                    console.log('✅ Confirmation email sent successfully');
                     sessionStorage.setItem(emailSentKey, 'true');
                     setEmailSent(true);
                 } else {
@@ -207,14 +178,10 @@ export const OrderSuccess = () => {
             }
         };
 
-        // Small delay to ensure order data is available
-        const timer = setTimeout(() => {
-            sendEmail();
-        }, 1000);
+        confirmPaymentAndSendEmail();
 
         return () => {
             cancelled = true;
-            clearTimeout(timer);
         };
     }, [orderId, user, navigate]);
 
@@ -253,15 +220,6 @@ export const OrderSuccess = () => {
                         </p>
                     )}
 
-                    {/* Order Status */}
-                    {orderStatus && (
-                        <div className="mb-4 px-4 py-2 bg-black/5 rounded-full">
-                            <p className="text-xs uppercase tracking-[0.15em] text-black/60">
-                                Status: {orderStatus}
-                            </p>
-                        </div>
-                    )}
-
                     {cartCleared && (
                         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
                             <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -277,7 +235,7 @@ export const OrderSuccess = () => {
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span>Sending confirmation email...</span>
+                            <span>Confirming your payment...</span>
                         </div>
                     )}
 
@@ -356,16 +314,6 @@ export const OrderSuccess = () => {
                             </div>
                         </div>
                     </div>
-
-                    {/* Debug: Show order data (only in development) */}
-                    {import.meta.env.DEV && orderData && (
-                        <div className="mt-8 p-4 bg-gray-100 rounded-lg text-left w-full overflow-auto">
-                            <h4 className="text-sm font-bold mb-2 text-[#2C2420]">Debug: Order Data</h4>
-                            <pre className="text-xs text-[#4D4D4D] max-h-40 overflow-auto">
-                                {JSON.stringify(orderData, null, 2)}
-                            </pre>
-                        </div>
-                    )}
                 </div>
             </div>
         </main>
