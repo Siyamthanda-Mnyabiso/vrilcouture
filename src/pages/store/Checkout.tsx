@@ -19,6 +19,7 @@ export const Checkout = () => {
     const [validatingItems, setValidatingItems] = useState(false);
     const [testMode, setTestMode] = useState(false);
     const [debugInfo, setDebugInfo] = useState<any>(null);
+    const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
 
     const [formData, setFormData] = useState({
         email: user?.email || '',
@@ -31,14 +32,10 @@ export const Checkout = () => {
         country: 'South Africa',
     });
 
-
     const shipping = subtotal >= 1000 ? 0 : 109;
     const total = subtotal + shipping;
 
     useEffect(() => {
-        // Don't redirect until the persisted cart has actually finished
-        // loading from localStorage — otherwise the brief initial "empty"
-        // state (before hydration) bounces every visit straight to /cart.
         if (isHydrated && items.length === 0) {
             navigate('/cart');
         }
@@ -49,11 +46,6 @@ export const Checkout = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Validate all cart items exist before proceeding.
-    // Cart items come in two shapes:
-    //   - real variant items: variantId points to a row in product_variants
-    //   - variant-less product items: variantId === productId (see
-    //     ProductDetails' fallback path), validated against products instead.
     const validateVariants = async () => {
         setValidatingItems(true);
 
@@ -92,7 +84,6 @@ export const Checkout = () => {
             ]);
 
             const invalidItems = items.filter(item => !validIds.has(item.variantId));
-
             const outOfStockItems = items.filter(item => {
                 const stock = validStockMap.get(item.variantId);
                 return stock !== undefined && stock < item.quantity;
@@ -100,21 +91,17 @@ export const Checkout = () => {
 
             if (invalidItems.length > 0) {
                 const invalidNames = invalidItems.map(item => item.name).join(', ');
-
                 invalidItems.forEach(item => {
                     removeItem(item.variantId);
                 });
-
                 setError(
                     `The following items are no longer available and have been removed: ${invalidNames}`
                 );
-
                 setTimeout(() => {
                     if (items.length === 0) {
                         navigate('/cart');
                     }
                 }, 3000);
-
                 return false;
             }
 
@@ -122,7 +109,6 @@ export const Checkout = () => {
                 const outOfStockNames = outOfStockItems
                     .map(item => `${item.name} (${item.size} · ${item.color})`)
                     .join(', ');
-
                 setError(
                     `The following items are out of stock: ${outOfStockNames}. Please adjust your quantities.`
                 );
@@ -140,11 +126,56 @@ export const Checkout = () => {
         }
     };
 
+    // ============ NEW: Function to send confirmation email ============
+    const sendConfirmationEmail = async (orderData: {
+        to: string;
+        toName: string;
+        orderId: string;
+        customerName: string;
+        orderTotal: number;
+        items: Array<{ name: string; quantity: number; price: number }>;
+        transactionId?: string;
+    }) => {
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+
+            const response = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionData.session?.access_token || ''}`,
+                        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                    },
+                    body: JSON.stringify(orderData),
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                console.error('Email sending failed:', result);
+                throw new Error(result.error || 'Failed to send confirmation email');
+            }
+
+            console.log('✅ Confirmation email sent:', result);
+            setEmailStatus('sent');
+            return result;
+        } catch (error) {
+            console.error('Error calling email function:', error);
+            setEmailStatus('failed');
+            return { success: false, error: error.message };
+        }
+    };
+    // ==================================================
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         setTestMode(false);
         setDebugInfo(null);
+        setEmailStatus('idle');
 
         if (!user) {
             setError('You must be signed in to place an order');
@@ -268,6 +299,32 @@ export const Checkout = () => {
                 throw new Error('Payment gateway did not return a checkout URL. Please try again.');
             }
 
+            // ============ SEND CONFIRMATION EMAIL ============
+            // Try to send email - don't block checkout if it fails
+            setEmailStatus('sending');
+            try {
+                await sendConfirmationEmail({
+                    to: formData.email,
+                    toName: `${formData.firstName} ${formData.lastName}`,
+                    orderId: result.orderId || `ORD-${Date.now()}`,
+                    customerName: `${formData.firstName} ${formData.lastName}`,
+                    orderTotal: total,
+                    items: items.map(item => ({
+                        name: item.name,
+                        quantity: item.quantity,
+                        price: item.price,
+                    })),
+                    transactionId: result.transactionId || result.paymentIntentId || undefined,
+                });
+                // Success - email sent
+                console.log('✅ Confirmation email sent successfully');
+            } catch (emailError) {
+                console.error('⚠️ Failed to send confirmation email:', emailError);
+                // Don't block checkout - just log the error
+                // User will still be redirected to payment
+            }
+            // ==================================================
+
             if (result.testMode) {
                 setTestMode(true);
                 setError(`Test mode: ${result.message || 'Redirecting to success page...'}`);
@@ -319,9 +376,6 @@ export const Checkout = () => {
 
     return (
         <main className="min-h-screen bg-white">
-
-            {/* Minimal top bar — brand only, deliberately stripped of nav/menu
-                so nothing distracts from completing payment. */}
             <div className="border-b border-black/10">
                 <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-6 flex items-center justify-between">
                     <button
@@ -343,14 +397,10 @@ export const Checkout = () => {
             </div>
 
             <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-10 md:py-16">
-
-                {/* Step indicator — purely visual signposting; the form below
-                    is a single submit, but this mirrors a Shopify Plus-style
-                    checkout's sense of progress. */}
                 <div className="mb-10 pb-5 border-b border-black/10">
-    <span className="text-xs uppercase tracking-[0.15em] text-black">
-        Checkout
-    </span>
+                    <span className="text-xs uppercase tracking-[0.15em] text-black">
+                        Checkout
+                    </span>
                 </div>
 
                 {error && (
@@ -363,6 +413,24 @@ export const Checkout = () => {
                         {error}
                     </div>
                 )}
+
+                {/* ============ NEW: Email Status Indicator ============ */}
+                {emailStatus === 'sending' && (
+                    <div className="border border-black/20 bg-black/[0.03] p-4 mb-8 text-sm tracking-wide text-black/70">
+                        Sending confirmation email...
+                    </div>
+                )}
+                {emailStatus === 'sent' && (
+                    <div className="border border-green-500/30 bg-green-50 p-4 mb-8 text-sm tracking-wide text-green-700">
+                        ✓ Confirmation email sent to {formData.email}
+                    </div>
+                )}
+                {emailStatus === 'failed' && (
+                    <div className="border border-yellow-500/30 bg-yellow-50 p-4 mb-8 text-sm tracking-wide text-yellow-700">
+                        ⚠️ Could not send confirmation email. We'll email you shortly with your order details.
+                    </div>
+                )}
+                {/* ================================================== */}
 
                 {debugInfo && (
                     <div className="border border-black/10 p-4 mb-8 text-xs font-mono overflow-auto max-h-60">
@@ -378,14 +446,11 @@ export const Checkout = () => {
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-10">
-
                     <form onSubmit={handleSubmit} className="space-y-8">
-
                         <section className="border border-black p-6 md:p-10">
                             <h2 className="font-display uppercase tracking-[0.18em] text-xl mb-8">
                                 Contact Details
                             </h2>
-
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <Input
                                     type="email"
@@ -425,7 +490,6 @@ export const Checkout = () => {
                             <h2 className="font-display uppercase tracking-[0.18em] text-xl mb-8">
                                 Shipping Address
                             </h2>
-
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="md:col-span-2">
                                     <Input
@@ -436,7 +500,6 @@ export const Checkout = () => {
                                         required
                                     />
                                 </div>
-
                                 <Input
                                     name="city"
                                     label="City"
@@ -480,15 +543,12 @@ export const Checkout = () => {
                         <p className="text-[11px] text-black/40 text-center -mt-2">
                             You'll be redirected to our secure payment gateway to complete your purchase.
                         </p>
-
                     </form>
 
                     <aside className="border border-black p-6 lg:p-8 h-fit lg:sticky lg:top-24">
-
                         <h2 className="font-display uppercase tracking-[0.18em] text-xl mb-8">
                             Your Order
                         </h2>
-
                         <div className="space-y-5 max-h-[420px] overflow-y-auto mb-8">
                             {items.map(item => (
                                 <div key={item.variantId} className="flex gap-4 border-b border-black/10 pb-5">
@@ -506,7 +566,6 @@ export const Checkout = () => {
                                             {item.quantity}
                                         </span>
                                     </div>
-
                                     <div className="flex-1">
                                         <p className="uppercase text-sm tracking-wide">
                                             {item.name}
@@ -521,15 +580,12 @@ export const Checkout = () => {
                                 </div>
                             ))}
                         </div>
-
                         <CartSummary
                             subtotal={subtotal}
                             shipping={shipping}
                             total={total}
                         />
-
                     </aside>
-
                 </div>
             </div>
         </main>

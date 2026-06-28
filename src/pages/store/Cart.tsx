@@ -9,9 +9,10 @@ export const Cart = () => {
     const navigate = useNavigate();
     const { items, subtotal, itemCount, clearCart, updateQuantity, removeItem } = useCart();
 
-    const tax = subtotal * 0.15;
-    const shipping = subtotal >= 2550 ? 0 : 100;
-    const total = subtotal + tax + shipping;
+
+    const shipping = subtotal >= 1000 ? 0 : 109;
+    const total = subtotal  + shipping;
+
 
     if (items.length === 0) {
         return (
@@ -97,7 +98,6 @@ export const Cart = () => {
                             </h3>
                             <CartSummary
                                 subtotal={subtotal}
-                                tax={tax}
                                 shipping={shipping}
                                 total={total}
                             />
