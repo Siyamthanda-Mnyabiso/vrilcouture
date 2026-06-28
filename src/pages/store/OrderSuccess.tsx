@@ -141,24 +141,14 @@ export const OrderSuccess = () => {
                     items: formattedItems,
                 };
 
-                // 🔥 FIX: Get a fresh session and ensure we have a valid token
-                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-
-                if (sessionError || !sessionData?.session) {
-                    console.error('❌ No valid session found:', sessionError);
-                    setEmailError(true);
-                    setLoading(false);
-                    return;
-                }
-
-                const token = sessionData.session.access_token;
+                const { data: { session } } = await supabase.auth.getSession();
 
                 const response = await fetch(
                     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`,
                     {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${token}`,
+                            'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify(emailPayload),
@@ -169,11 +159,11 @@ export const OrderSuccess = () => {
 
                 if (cancelled) return;
 
-                if (response.ok && result.success) {
+                if (result.success) {
                     sessionStorage.setItem(emailSentKey, 'true');
                     setEmailSent(true);
                 } else {
-                    console.error('❌ Failed to send email:', result.error || result);
+                    console.error('❌ Failed to send email:', result.error);
                     setEmailError(true);
                 }
             } catch (error) {
