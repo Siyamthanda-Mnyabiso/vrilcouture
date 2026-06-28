@@ -18,7 +18,6 @@ export const OrderSuccess = () => {
     const [loading, setLoading] = useState(true);
     const [cartCleared, setCartCleared] = useState(false);
     const [debugInfo, setDebugInfo] = useState<string[]>([]);
-    const [statusUpdated, setStatusUpdated] = useState(false);
 
     const addDebug = (message: string) => {
         console.log('🔍', message);
@@ -49,11 +48,12 @@ export const OrderSuccess = () => {
         let cancelled = false;
         const emailSentKey = `email_sent_${orderId}`;
 
-        const confirmPaymentAndSendEmail = async () => {
+        const sendConfirmationEmail = async () => {
             try {
                 addDebug(`Starting for order ${orderId}`);
                 setLoading(true);
 
+                // Check if email already sent
                 if (sessionStorage.getItem(emailSentKey)) {
                     addDebug('Email already sent (session storage)');
                     setEmailSent(true);
@@ -61,99 +61,25 @@ export const OrderSuccess = () => {
                     return;
                 }
 
-                const maxAttempts = 10;
-                const delayMs = 1500;
-                let order: any = null;
+                // Fetch the order
+                addDebug(`Fetching order ${orderId}`);
+                const { data: order, error: orderError } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('id', orderId)
+                    .single();
 
-                addDebug('Polling for order status...');
-                for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                    if (cancelled) return;
-
-                    const { data, error: orderError } = await supabase
-                        .from('orders')
-                        .select('*')
-                        .eq('id', orderId)
-                        .single();
-
-                    if (orderError || !data) {
-                        addDebug(`Error fetching order: ${orderError?.message}`);
-                        console.error('Error fetching order:', orderError);
-                        navigate('/');
-                        return;
-                    }
-
-                    order = data;
-                    addDebug(`Order status attempt ${attempt + 1}: ${order.status}`);
-
-                    // If order is already paid, we're good
-                    if (order.status === 'paid') {
-                        addDebug('Order is already paid!');
-                        break;
-                    }
-
-                    // If order is cancelled, redirect
-                    if (order.status === 'cancelled') {
-                        addDebug('Order cancelled');
-                        navigate('/');
-                        return;
-                    }
-
-                    // If we've reached the last attempt and status is still pending,
-                    // force update the status to paid
-                    if (attempt === maxAttempts - 1 && order.status === 'pending') {
-                        addDebug('⚠️ Order still pending, forcing status update to paid');
-
-                        // Get service role key for admin access
-                        const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-                        if (!serviceKey) {
-                            addDebug('❌ No service role key available to update status');
-                            setEmailError(true);
-                            setLoading(false);
-                            return;
-                        }
-
-                        // Update order status to paid using service role key
-                        const { data: updatedOrder, error: updateError } = await supabase
-                            .from('orders')
-                            .update({
-                                status: 'paid',
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('id', orderId)
-                            .select()
-                            .single();
-
-                        if (updateError) {
-                            addDebug(`❌ Failed to force update status: ${updateError.message}`);
-                            console.error('Error updating order status:', updateError);
-                            setEmailError(true);
-                            setLoading(false);
-                            return;
-                        }
-
-                        addDebug('✅ Order status force updated to paid');
-                        setStatusUpdated(true);
-                        order = updatedOrder;
-                        break;
-                    }
-
-                    // Wait before next attempt
-                    if (attempt < maxAttempts - 1) {
-                        await new Promise((r) => setTimeout(r, delayMs));
-                    }
-                }
-
-                if (cancelled) return;
-
-                // After all attempts, check if order is paid
-                if (!order || order.status !== 'paid') {
-                    addDebug('Order not paid after all attempts, showing error');
+                if (orderError || !order) {
+                    addDebug(`Error fetching order: ${orderError?.message}`);
+                    console.error('Error fetching order:', orderError);
                     setEmailError(true);
                     setLoading(false);
                     return;
                 }
 
-                // At this point, order is paid, send email
+                addDebug(`Order found: ${order.id}, status: ${order.status}`);
+
+                // Get user email
                 let resolvedEmail = user?.email || '';
                 let userName = 'Customer';
                 addDebug(`User email: ${resolvedEmail}`);
@@ -175,6 +101,22 @@ export const OrderSuccess = () => {
                     }
                 }
 
+                // If no email found, try to get from order if it has user_id
+                if (!resolvedEmail && order.user_id) {
+                    addDebug(`Fetching user from order user_id: ${order.user_id}`);
+                    const { data: userData, error: userError } = await supabase
+                        .from('users')
+                        .select('email, full_name')
+                        .eq('id', order.user_id)
+                        .single();
+
+                    if (!userError && userData) {
+                        resolvedEmail = userData.email || '';
+                        userName = userData.full_name || 'Customer';
+                        addDebug(`Found user from order: ${userName}, email: ${resolvedEmail}`);
+                    }
+                }
+
                 if (!resolvedEmail) {
                     addDebug('❌ No email address found!');
                     setEmailError(true);
@@ -182,6 +124,7 @@ export const OrderSuccess = () => {
                     return;
                 }
 
+                // Fetch order items
                 addDebug(`Fetching order items for ${orderId}`);
                 const { data: itemsData, error: itemsError } = await supabase
                     .from('order_items')
@@ -255,7 +198,6 @@ export const OrderSuccess = () => {
 
                 const functionUrl = `${supabaseUrl}/functions/v1/send-confirmation-email`;
                 addDebug(`Calling function: ${functionUrl}`);
-                addDebug(`Token: ${token.substring(0, 20)}...`);
 
                 const response = await fetch(functionUrl, {
                     method: 'POST',
@@ -294,265 +236,156 @@ export const OrderSuccess = () => {
             }
         };
 
-        confirmPaymentAndSendEmail();
+        // Send email immediately - no status checking
+        sendConfirmationEmail();
 
         return () => {
             cancelled = true;
         };
     }, [orderId, user, navigate]);
 
-    // Function to manually update order status and send email
-    const forceUpdateAndSendEmail = async () => {
+    // Manual retry function if email fails
+    const retrySendEmail = async () => {
         try {
-            addDebug('🔧 Force updating order status and sending email');
-            console.log('🔧 Force updating order status and sending email');
+            addDebug('🔄 Retrying email send...');
+            setLoading(true);
+            setEmailError(false);
 
-            if (!orderId) {
-                alert('No order ID found!');
-                return;
-            }
+            // Clear the session storage flag so it can resend
+            const emailSentKey = `email_sent_${orderId}`;
+            sessionStorage.removeItem(emailSentKey);
 
-            // Get service role key
-            const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-            if (!serviceKey) {
-                alert('Service role key not configured!');
-                addDebug('❌ Service role key not configured');
-                return;
-            }
+            // Re-run the email sending logic by triggering the useEffect
+            // We'll just call the function directly
+            const sendEmail = async () => {
+                if (!orderId) return;
 
-            // Update order status to paid
-            const { data: updatedOrder, error: updateError } = await supabase
-                .from('orders')
-                .update({
-                    status: 'paid',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', orderId)
-                .select()
-                .single();
-
-            if (updateError) {
-                console.error('❌ Error updating order:', updateError);
-                alert('Error updating order: ' + updateError.message);
-                addDebug('❌ Error updating order: ' + updateError.message);
-                return;
-            }
-
-            console.log('✅ Order status updated to paid:', updatedOrder);
-            addDebug('✅ Order status updated to paid');
-            setStatusUpdated(true);
-
-            // Now send the email
-            const order = updatedOrder;
-
-            // Get user email
-            let email = user?.email || '';
-            let userName = 'Customer';
-
-            if (user?.id) {
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .select('email, full_name')
-                    .eq('id', user.id)
+                // Fetch the order
+                const { data: order, error: orderError } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('id', orderId)
                     .single();
 
-                if (!userError && userData) {
-                    email = userData.email || email;
-                    userName = userData.full_name || userName;
+                if (orderError || !order) {
+                    addDebug(`Error fetching order: ${orderError?.message}`);
+                    setEmailError(true);
+                    setLoading(false);
+                    return;
                 }
-            }
 
-            if (!email) {
-                alert('No email found for user!');
-                addDebug('❌ No email found for user');
-                return;
-            }
+                // Get user email
+                let resolvedEmail = user?.email || '';
+                let userName = 'Customer';
 
-            // Fetch order items
-            const { data: itemsData } = await supabase
-                .from('order_items')
-                .select('*')
-                .eq('order_id', orderId);
+                if (user?.id) {
+                    const { data: userRow, error: userError } = await supabase
+                        .from('users')
+                        .select('full_name, email')
+                        .eq('id', user.id)
+                        .single();
 
-            const payload = {
-                to: email,
-                customerName: userName,
-                orderId: order.id,
-                orderTotal: order.total,
-                transactionId: (order as any).stitch_payment_id || '',
-                items: itemsData?.map(item => ({
-                    name: item.product_name,
-                    quantity: item.quantity,
-                    price: item.price
-                })) || []
+                    if (!userError && userRow) {
+                        userName = userRow.full_name || 'Customer';
+                        if (userRow.email) {
+                            resolvedEmail = userRow.email;
+                        }
+                    }
+                }
+
+                if (!resolvedEmail && order.user_id) {
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('email, full_name')
+                        .eq('id', order.user_id)
+                        .single();
+
+                    if (userData) {
+                        resolvedEmail = userData.email || '';
+                        userName = userData.full_name || 'Customer';
+                    }
+                }
+
+                if (!resolvedEmail) {
+                    addDebug('❌ No email address found!');
+                    setEmailError(true);
+                    setLoading(false);
+                    return;
+                }
+
+                // Fetch order items
+                const { data: itemsData } = await supabase
+                    .from('order_items')
+                    .select('*')
+                    .eq('order_id', orderId);
+
+                const formattedItems = (itemsData && itemsData.length > 0)
+                    ? itemsData.map((item) => ({
+                        name: item.product_name,
+                        quantity: item.quantity,
+                        price: item.price,
+                    }))
+                    : [{
+                        name: 'Order Items',
+                        quantity: 1,
+                        price: order.total,
+                    }];
+
+                const emailPayload = {
+                    to: resolvedEmail,
+                    customerName: userName,
+                    orderId: order.id,
+                    orderTotal: order.total,
+                    transactionId: (order as any).stitch_payment_id || '',
+                    items: formattedItems,
+                };
+
+                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+                const { data: sessionData } = await supabase.auth.getSession();
+                let token = sessionData?.session?.access_token;
+
+                if (!token) {
+                    const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+                    if (serviceKey) {
+                        token = serviceKey;
+                    } else {
+                        setEmailError(true);
+                        setLoading(false);
+                        return;
+                    }
+                }
+
+                const response = await fetch(
+                    `${supabaseUrl}/functions/v1/send-confirmation-email`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(emailPayload),
+                    }
+                );
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    sessionStorage.setItem(`email_sent_${orderId}`, 'true');
+                    setEmailSent(true);
+                    addDebug('✅ Email sent successfully on retry!');
+                } else {
+                    addDebug(`❌ Retry failed: ${JSON.stringify(result)}`);
+                    setEmailError(true);
+                }
             };
 
-            addDebug(`📧 Sending email to ${email}`);
-
-            const response = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload),
-                }
-            );
-
-            const result = await response.json();
-            console.log('📧 Email response:', result);
-            addDebug('📧 Email response: ' + JSON.stringify(result));
-
-            if (response.ok && result.success) {
-                alert('✅ Order status updated and email sent successfully to ' + email);
-                setEmailSent(true);
-                sessionStorage.setItem(`email_sent_${orderId}`, 'true');
-            } else {
-                alert('❌ Email failed to send: ' + JSON.stringify(result));
-                setEmailError(true);
-            }
+            await sendEmail();
         } catch (error) {
-            console.error('❌ Error:', error);
-            addDebug('❌ Error: ' + (error instanceof Error ? error.message : String(error)));
-            alert('Error: ' + (error instanceof Error ? error.message : String(error)));
-        }
-    };
-
-    // Temporary debug function to test email with real order data
-    const testEmailWithRealOrder = async () => {
-        try {
-            addDebug('🧪 Testing email with real order ID: ' + orderId);
-            console.log('🔍 Testing email with real order ID:', orderId);
-
-            if (!orderId) {
-                alert('No order ID found!');
-                return;
-            }
-
-            // Fetch the real order
-            const { data: order, error: orderError } = await supabase
-                .from('orders')
-                .select('*')
-                .eq('id', orderId)
-                .single();
-
-            if (orderError || !order) {
-                console.error('❌ Error fetching order:', orderError);
-                alert('Error fetching order: ' + orderError?.message);
-                return;
-            }
-
-            console.log('📦 Order found:', order);
-            addDebug('📦 Order found: ' + JSON.stringify(order));
-
-            // Fetch order items
-            const { data: items, error: itemsError } = await supabase
-                .from('order_items')
-                .select('*')
-                .eq('order_id', orderId);
-
-            if (itemsError) {
-                console.error('❌ Error fetching items:', itemsError);
-                addDebug('❌ Error fetching items: ' + itemsError.message);
-            }
-
-            console.log('📦 Items:', items);
-            addDebug('📦 Items found: ' + (items?.length || 0));
-
-            // Get user email - FIXED: Use user.email directly or from users table
-            let email = user?.email || '';
-            let userName = 'Customer';
-
-            // Try to get from users table
-            if (user?.id) {
-                addDebug('Fetching user data for email');
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .select('email, full_name')
-                    .eq('id', user.id)
-                    .single();
-
-                if (!userError && userData) {
-                    email = userData.email || email;
-                    userName = userData.full_name || userName;
-                    addDebug(`Found user: ${userName}, email: ${email}`);
-                }
-            }
-
-            // If still no email, try user metadata
-            if (!email && user) {
-                // @ts-ignore - user_metadata might exist on the user object
-                const metadata = user.user_metadata || {};
-                email = metadata.email || '';
-                userName = metadata.full_name || metadata.name || 'Customer';
-                addDebug(`Using metadata: ${userName}, email: ${email}`);
-            }
-
-            if (!email) {
-                alert('No email found for user! Please check the users table.');
-                addDebug('❌ No email found for user');
-                return;
-            }
-
-            addDebug(`📧 Using email: ${email}, name: ${userName}`);
-
-            const payload = {
-                to: email,
-                customerName: userName,
-                orderId: order.id,
-                orderTotal: order.total,
-                transactionId: (order as any).stitch_payment_id || '',
-                items: items?.map(item => ({
-                    name: item.product_name,
-                    quantity: item.quantity,
-                    price: item.price
-                })) || []
-            };
-
-            console.log('📧 Sending payload:', payload);
-            addDebug('📧 Payload: ' + JSON.stringify(payload));
-
-            // Get token
-            const { data: sessionData } = await supabase.auth.getSession();
-            const token = sessionData?.session?.access_token || import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-
-            if (!token) {
-                alert('No authentication token available!');
-                addDebug('❌ No token available');
-                return;
-            }
-
-            addDebug('🔑 Token obtained');
-
-            const response = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload),
-                }
-            );
-
-            const result = await response.json();
-            console.log('📧 Response:', result);
-            addDebug('📧 Response: ' + JSON.stringify(result));
-
-            if (response.ok && result.success) {
-                alert('✅ Email sent successfully to ' + email);
-                setEmailSent(true);
-            } else {
-                alert('❌ Failed to send email: ' + JSON.stringify(result));
-                setEmailError(true);
-            }
-        } catch (error) {
-            console.error('❌ Error:', error);
-            addDebug('❌ Error: ' + (error instanceof Error ? error.message : String(error)));
-            alert('Error: ' + (error instanceof Error ? error.message : String(error)));
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            addDebug(`❌ Retry error: ${errorMsg}`);
+            setEmailError(true);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -591,15 +424,6 @@ export const OrderSuccess = () => {
                         </p>
                     )}
 
-                    {statusUpdated && (
-                        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-                            <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                            <p className="text-green-700 text-sm">✓ Order status updated to paid!</p>
-                        </div>
-                    )}
-
                     {cartCleared && (
                         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
                             <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -615,7 +439,7 @@ export const OrderSuccess = () => {
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span>Confirming your payment...</span>
+                            <span>Sending confirmation email...</span>
                         </div>
                     )}
 
@@ -634,7 +458,7 @@ export const OrderSuccess = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
                             <span className="text-amber-700 text-sm">
-                                We couldn't send the confirmation email. You'll receive it shortly, or you can contact support.
+                                We couldn't send the confirmation email. Click the button below to retry.
                             </span>
                         </div>
                     )}
@@ -658,24 +482,15 @@ export const OrderSuccess = () => {
                         </button>
                     </div>
 
-                    {/* Debug buttons */}
-                    {orderId && (
-                        <div className="mt-4 flex flex-col gap-2">
+                    {/* Retry button - only shown if email failed */}
+                    {emailError && !loading && (
+                        <div className="mt-4">
                             <button
-                                onClick={forceUpdateAndSendEmail}
-                                className="px-8 py-3 bg-green-600 text-white text-sm font-medium uppercase tracking-wider hover:bg-green-700 transition-colors"
+                                onClick={retrySendEmail}
+                                className="px-8 py-3 bg-blue-600 text-white text-sm font-medium uppercase tracking-wider hover:bg-blue-700 transition-colors"
                             >
-                                🔧 Force Update & Send Email
+                                🔄 Retry Sending Email
                             </button>
-                            <button
-                                onClick={testEmailWithRealOrder}
-                                className="px-8 py-3 bg-purple-600 text-white text-sm font-medium uppercase tracking-wider hover:bg-purple-700 transition-colors"
-                            >
-                                🧪 Test Email with Real Order
-                            </button>
-                            <p className="text-xs text-gray-500 mt-1">
-                                Click "Force Update & Send Email" to update order status and send the confirmation email
-                            </p>
                         </div>
                     )}
 
