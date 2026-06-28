@@ -1,5 +1,5 @@
 // src/components/category/CategoryBanner.tsx
-import { Link } from 'react-router-dom';
+
 
 interface CategoryBannerProps {
     categoryName: string;
@@ -8,7 +8,7 @@ interface CategoryBannerProps {
     imageUrl: string;
 }
 
-export function CategoryBanner({ categoryName, categorySlug, description, imageUrl }: CategoryBannerProps) {
+export function CategoryBanner({ categoryName, description, imageUrl }: CategoryBannerProps) {
     return (
         <section className="relative w-full h-[60vh] md:h-[70vh] overflow-hidden bg-black">
             <img
@@ -28,12 +28,7 @@ export function CategoryBanner({ categoryName, categorySlug, description, imageU
                     {description}
                 </p>
 
-                <Link
-                    to={`/category/${categorySlug}`}
-                    className="inline-block bg-[#1f5c4a] text-white px-8 py-3 text-xs uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-colors"
-                >
-                    Shop Now
-                </Link>
+
             </div>
         </section>
     );
