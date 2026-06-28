@@ -1,7 +1,6 @@
 export function Hero() {
     return (
         <section className="relative h-screen bg-black overflow-hidden">
-
             <video
                 autoPlay
                 muted
@@ -9,7 +8,10 @@ export function Hero() {
                 playsInline
                 className="absolute inset-0 w-full h-full object-cover"
             >
-                <source src="/videos/hero_vid.mp4" type="video/mp4" />
+                <source
+                    src="https://cdn.cosmos.so/a1307d2a-dfb6-415a-9738-9768e4a2dc95.mp4"
+                    type="video/mp4"
+                />
             </video>
 
             <div className="absolute inset-0 bg-black/40" />

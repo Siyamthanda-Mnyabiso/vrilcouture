@@ -1,24 +1,28 @@
-import type {Product} from '../../features/products/product.types';
-import {ProductCard} from './ProductCard';
-import {Loader} from '../ui/Loader';
+// src/components/product/ProductGrid.tsx
+import { Link } from 'react-router-dom';
+import type { Product } from '../../features/products/product.types';
+import { ProductCard } from './ProductCard';
+import { Loader } from '../ui/Loader';
 
 interface ProductGridProps {
-    title?: string,
-    products: Product[],
-    loading?: boolean,
-    columns?: number
+    title?: string;
+    products: Product[];
+    loading?: boolean;
+    columns?: number;
+    viewAllHref?: string;
 }
 
 export function ProductGrid({
                                 title,
                                 products,
-                                loading = false
+                                loading = false,
+                                viewAllHref,
                             }: ProductGridProps) {
 
     if (loading) {
         return (
             <div className="flex justify-center py-32">
-                <Loader size="lg"/>
+                <Loader size="lg" />
             </div>
         );
     }
@@ -28,26 +32,55 @@ export function ProductGrid({
     return (
         <section className="bg-[#FAFAF8] px-6 md:px-12 py-20">
 
-            {/* subtle header */}
-            {title && (
-                <div className="mb-16 text-center">
+            {/* header row: title left, view all right */}
+            <div className="flex items-end justify-between mb-16 border-b border-black/10 pb-6">
+                <div>
                     <p className="text-[10px] tracking-[0.6em] uppercase text-black/40">
                         Vril Archive
                     </p>
 
-                    <h2 className="
-                        mt-4
-                        font-display
-                        text-4xl md:text-5xl
-                        uppercase
-                        tracking-[-0.03em]
-                        font-light
-                        text-black
-                    ">
-                        {title}
-                    </h2>
+                    {title && (
+                        <h2 className="
+                            mt-4
+                            font-display
+                            text-4xl md:text-5xl
+                            uppercase
+                            tracking-[-0.03em]
+                            font-light
+                            text-black
+                        ">
+                            {title}
+                        </h2>
+                    )}
                 </div>
-            )}
+
+                {viewAllHref && (
+                    <Link
+                        to={viewAllHref}
+                        className="
+                            hidden md:inline-flex
+                            items-center
+                            gap-4
+                            text-xs
+                            uppercase
+                            tracking-[0.4em]
+                            text-black
+                            group
+                            shrink-0
+                            pb-1
+                        "
+                    >
+                        See More
+                        <span className="
+                            w-10
+                            h-px
+                            bg-black
+                            transition-all
+                            group-hover:w-16
+                        " />
+                    </Link>
+                )}
+            </div>
 
             {displayedProducts.length === 0 ? (
                 <div className="text-center py-24">
@@ -75,9 +108,22 @@ export function ProductGrid({
                                 hover:-translate-y-2
                             "
                         >
-                            <ProductCard product={product}/>
+                            <ProductCard product={product} />
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* mobile-only "See More" since it's hidden in the header row on small screens */}
+            {viewAllHref && (
+                <div className="mt-12 text-center md:hidden">
+                    <Link
+                        to={viewAllHref}
+                        className="inline-flex items-center gap-4 text-xs uppercase tracking-[0.4em] text-black"
+                    >
+                        See More
+                        <span className="w-10 h-px bg-black" />
+                    </Link>
                 </div>
             )}
 
