@@ -145,7 +145,7 @@ export const OrderSuccess = () => {
                 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
                 // Try to get session token
-                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                const { data: sessionData } = await supabase.auth.getSession();
                 let token = sessionData?.session?.access_token;
 
                 // If no session, try using service role key (more reliable)
@@ -160,6 +160,14 @@ export const OrderSuccess = () => {
                         setLoading(false);
                         return;
                     }
+                }
+
+                // 🔥 FIX: Ensure token is defined before using it
+                if (!token) {
+                    console.error('❌ Token is undefined');
+                    setEmailError(true);
+                    setLoading(false);
+                    return;
                 }
 
                 const functionUrl = `${supabaseUrl}/functions/v1/send-confirmation-email`;
