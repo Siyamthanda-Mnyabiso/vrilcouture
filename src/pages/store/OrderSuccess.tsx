@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useCart } from '../../hooks/useCart';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -9,16 +10,41 @@ export const OrderSuccess = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const orderId = searchParams.get('orderId');
+    const { clearCart, items, totalItems } = useCart();
     const { user } = useAuth();
 
     const [emailSent, setEmailSent] = useState(false);
     const [emailError, setEmailError] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [cartCleared, setCartCleared] = useState(false);
     const [redirecting, setRedirecting] = useState(false);
 
+    // Clear cart once we know we have an orderId. This doesn't depend on
+    // payment status — the cart should empty once checkout was attempted,
+    // regardless of outcome, so the user doesn't see stale items if they
+    // go back to shop.
+    useEffect(() => {
+        const cartClearedKey = `cart_cleared_${orderId}`;
+        const alreadyCleared = sessionStorage.getItem(cartClearedKey);
+
+        if (orderId && !cartCleared && !alreadyCleared) {
+            clearCart();
+            setCartCleared(true);
+            sessionStorage.setItem(cartClearedKey, 'true');
+        } else if (alreadyCleared) {
+            setCartCleared(true);
+        } else if (!orderId) {
+            navigate('/');
+        }
+    }, [orderId, clearCart, cartCleared, totalItems, items, navigate]);
+
+    // Confirm the order is actually 'paid' before doing anything else.
+    // If it isn't, send the customer home instead of showing a success
+    // screen or emailing them. We poll briefly because the Stitch webhook
+    // can take a couple seconds to land after the redirect — checking
+    // only once, immediately, risks bouncing a customer who really did pay.
     useEffect(() => {
         if (!orderId) {
-            navigate('/');
             return;
         }
 
@@ -29,51 +55,70 @@ export const OrderSuccess = () => {
             try {
                 setLoading(true);
 
-                const { data: order, error: orderError } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .eq('id', orderId)
-                    .single();
-
-                if (cancelled) return;
-
-                if (orderError || !order) {
-                    console.error('Error fetching order:', orderError);
-                    navigate('/');
-                    return;
-                }
-
-                // Payment was not successful — send the customer home
-                // instead of showing a confirmation screen or emailing them.
-                if (order.status !== 'paid') {
-                    setRedirecting(true);
-                    navigate('/');
-                    return;
-                }
-
-                // Already emailed for this order in this browser — don't resend.
                 if (sessionStorage.getItem(emailSentKey)) {
                     setEmailSent(true);
                     setLoading(false);
                     return;
                 }
 
-                // Resolve customer email/name from auth + profile,
-                // since orders doesn't store these directly.
+                const maxAttempts = 6;
+                const delayMs = 1500;
+                let order: any = null;
+
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    if (cancelled) return;
+
+                    const { data, error: orderError } = await supabase
+                        .from('orders')
+                        .select('*')
+                        .eq('id', orderId)
+                        .single();
+
+                    if (orderError || !data) {
+                        console.error('Error fetching order:', orderError);
+                        navigate('/');
+                        return;
+                    }
+
+                    order = data;
+
+                    if (order.status === 'paid') {
+                        break;
+                    }
+
+                    if (order.status === 'cancelled') {
+                        navigate('/');
+                        return;
+                    }
+
+                    if (attempt < maxAttempts - 1) {
+                        await new Promise((r) => setTimeout(r, delayMs));
+                    }
+                }
+
+                if (cancelled) return;
+
+                if (!order || order.status !== 'paid') {
+                    // Payment never confirmed within the wait window.
+                    navigate('/');
+                    return;
+                }
+
+                // Resolve customer email/name from users table.
                 let resolvedEmail = user?.email || '';
                 let userName = 'Customer';
 
                 if (user?.id) {
-                    const { data: profile, error: profileError } = await supabase
-                        .from('profiles')
+                    const { data: userRow, error: userError } = await supabase
+                        .from('users')
                         .select('full_name, email')
                         .eq('id', user.id)
                         .single();
 
-                    if (!profileError && profile) {
-                        userName = profile.full_name || 'Customer';
-                        if (profile.email) {
-                            resolvedEmail = profile.email;
+                    if (!userError && userRow) {
+                        userName = userRow.full_name || 'Customer';
+                        if (userRow.email) {
+                            resolvedEmail = userRow.email;
                         }
                     }
                 }
@@ -88,16 +133,25 @@ export const OrderSuccess = () => {
                 }
 
                 const formattedItems = (itemsData && itemsData.length > 0)
-                    ? itemsData.map((item: any) => ({
-                        name: item.product_name || 'Product',
-                        quantity: item.quantity || 1,
-                        price: parseFloat(item.price) || 0,
+                    ? itemsData.map((item) => ({
+                        name: item.product_name,
+                        quantity: item.quantity,
+                        price: item.price,
                     }))
                     : [{
                         name: 'Order Items',
                         quantity: 1,
-                        price: parseFloat(order.total) || 0,
+                        price: order.total,
                     }];
+
+                const emailPayload = {
+                    to: resolvedEmail,
+                    customerName: userName,
+                    orderId: order.id,
+                    orderTotal: order.total,
+                    transactionId: order.stitch_payment_id || '',
+                    items: formattedItems,
+                };
 
                 const { data: { session } } = await supabase.auth.getSession();
 
@@ -109,14 +163,7 @@ export const OrderSuccess = () => {
                             'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({
-                            to: resolvedEmail,
-                            customerName: userName,
-                            orderId: order.id,
-                            orderTotal: parseFloat(order.total) || 0,
-                            transactionId: order.stitch_payment_id || '',
-                            items: formattedItems,
-                        }),
+                        body: JSON.stringify(emailPayload),
                     }
                 );
 
@@ -193,13 +240,22 @@ export const OrderSuccess = () => {
                         </p>
                     )}
 
+                    {cartCleared && (
+                        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                            <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <p className="text-green-700 text-sm">✓ Your cart has been cleared</p>
+                        </div>
+                    )}
+
                     {loading && (
                         <div className="mb-6 flex items-center gap-2 text-[#8A8378]">
                             <svg className="animate-spin h-5 w-5 text-[#6B5D4F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span>Sending confirmation email...</span>
+                            <span>Confirming your payment...</span>
                         </div>
                     )}
 
