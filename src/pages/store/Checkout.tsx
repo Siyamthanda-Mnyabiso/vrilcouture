@@ -126,7 +126,7 @@ export const Checkout = () => {
         }
     };
 
-    // ============ NEW: Function to send confirmation email ============
+    // Function to send confirmation email
     const sendConfirmationEmail = async (orderData: {
         to: string;
         toName: string;
@@ -168,7 +168,6 @@ export const Checkout = () => {
             return { success: false, error: error.message };
         }
     };
-    // ==================================================
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -177,8 +176,15 @@ export const Checkout = () => {
         setDebugInfo(null);
         setEmailStatus('idle');
 
+        // Validate user is authenticated
         if (!user) {
             setError('You must be signed in to place an order');
+            return;
+        }
+
+        // Validate email is provided
+        if (!formData.email || !formData.email.includes('@')) {
+            setError('Please enter a valid email address');
             return;
         }
 
@@ -195,41 +201,32 @@ export const Checkout = () => {
         setIsProcessing(true);
 
         try {
+            // Get fresh session with better error handling
             const { data: sessionData, error: sessionError } =
                 await supabase.auth.getSession();
 
-            if (sessionError || !sessionData.session) {
-                throw new Error('Session expired. Please log in again.');
+            if (sessionError) {
+                console.error('Session error:', sessionError);
+                throw new Error('Failed to get session. Please try logging in again.');
             }
 
-            const variantItems = items.filter(item => item.variantId !== item.productId);
-            const productOnlyItems = items.filter(item => item.variantId === item.productId);
+            if (!sessionData.session) {
+                // Try to refresh the session
+                const { data: refreshData, error: refreshError } =
+                    await supabase.auth.refreshSession();
 
-            const [variantStockResult, productStockResult] = await Promise.all([
-                variantItems.length > 0
-                    ? supabase.from('product_variants').select('id, stock').in('id', variantItems.map(i => i.variantId))
-                    : Promise.resolve({ data: [], error: null }),
-                productOnlyItems.length > 0
-                    ? supabase.from('products').select('id, stock').in('id', productOnlyItems.map(i => i.productId))
-                    : Promise.resolve({ data: [], error: null }),
-            ]);
+                if (refreshError || !refreshData.session) {
+                    throw new Error('Session expired. Please log in again.');
+                }
 
-            if (variantStockResult.error || productStockResult.error) {
-                throw new Error('Failed to verify stock availability');
+                // Use the refreshed session
+                sessionData.session = refreshData.session;
             }
 
-            const stockMap = new Map<string, number>([
-                ...((variantStockResult.data ?? []).map((v: any) => [v.id, v.stock] as [string, number])),
-                ...((productStockResult.data ?? []).map((p: any) => [p.id, p.stock] as [string, number])),
-            ]);
-
-            const outOfStock = items.some(item => {
-                const stock = stockMap.get(item.variantId);
-                return stock === undefined || stock < item.quantity;
-            });
-
-            if (outOfStock) {
-                setError('Some items are no longer in stock. Please refresh your cart.');
+            // Validate email is provided
+            if (!formData.email) {
+                setError('Email is required');
+                setIsProcessing(false);
                 return;
             }
 
@@ -286,11 +283,46 @@ export const Checkout = () => {
             setDebugInfo(result);
 
             if (!response.ok) {
-                if (response.status === 400 && result.error?.includes('not found')) {
+                // Handle specific error cases
+                if (response.status === 401) {
+                    // Try to refresh the session and retry
+                    const { data: refreshData, error: refreshError } =
+                        await supabase.auth.refreshSession();
+
+                    if (refreshError || !refreshData.session) {
+                        throw new Error('Your session has expired. Please log in again.');
+                    }
+
+                    // Retry the request with new token
+                    const retryResponse = await fetch(
+                        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/checkout`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${refreshData.session.access_token}`,
+                                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                            },
+                            body: JSON.stringify(requestBody),
+                        }
+                    );
+
+                    const retryText = await retryResponse.text();
+                    try {
+                        result = JSON.parse(retryText);
+                    } catch (parseError) {
+                        throw new Error('Invalid response from server. Please try again.');
+                    }
+
+                    if (!retryResponse.ok) {
+                        throw new Error(result.error || 'Session expired. Please log in again.');
+                    }
+                } else if (response.status === 400 && result.error?.includes('not found')) {
                     await validateVariants();
                     throw new Error('Some items in your cart are no longer available. They have been removed.');
+                } else {
+                    throw new Error(result.error || `Checkout failed with status ${response.status}`);
                 }
-                throw new Error(result.error || `Checkout failed with status ${response.status}`);
             }
 
             if (!result.checkoutUrl) {
@@ -299,8 +331,7 @@ export const Checkout = () => {
                 throw new Error('Payment gateway did not return a checkout URL. Please try again.');
             }
 
-            // ============ SEND CONFIRMATION EMAIL ============
-            // Try to send email - don't block checkout if it fails
+            // Send confirmation email (don't block checkout)
             setEmailStatus('sending');
             try {
                 await sendConfirmationEmail({
@@ -316,23 +347,19 @@ export const Checkout = () => {
                     })),
                     transactionId: result.transactionId || result.paymentIntentId || undefined,
                 });
-                // Success - email sent
                 console.log('✅ Confirmation email sent successfully');
             } catch (emailError) {
                 console.error('⚠️ Failed to send confirmation email:', emailError);
                 // Don't block checkout - just log the error
-                // User will still be redirected to payment
             }
-            // ==================================================
 
+            // Redirect to payment
             if (result.testMode) {
                 setTestMode(true);
                 setError(`Test mode: ${result.message || 'Redirecting to success page...'}`);
-
                 setTimeout(() => {
                     window.location.href = result.checkoutUrl;
                 }, 2000);
-
                 setIsProcessing(false);
                 return;
             }
@@ -414,7 +441,7 @@ export const Checkout = () => {
                     </div>
                 )}
 
-                {/* ============ NEW: Email Status Indicator ============ */}
+                {/* Email Status Indicator */}
                 {emailStatus === 'sending' && (
                     <div className="border border-black/20 bg-black/[0.03] p-4 mb-8 text-sm tracking-wide text-black/70">
                         Sending confirmation email...
@@ -430,7 +457,6 @@ export const Checkout = () => {
                         ⚠️ Could not send confirmation email. We'll email you shortly with your order details.
                     </div>
                 )}
-                {/* ================================================== */}
 
                 {debugInfo && (
                     <div className="border border-black/10 p-4 mb-8 text-xs font-mono overflow-auto max-h-60">

@@ -1,20 +1,20 @@
+// src/pages/store/OrderSuccess.tsx
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL || '',
-    import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 export const OrderSuccess = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const orderId = searchParams.get('orderId');
+    const { user } = useAuth();
+
     const [emailSent, setEmailSent] = useState(false);
     const [emailError, setEmailError] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [redirecting, setRedirecting] = useState(false);
 
     useEffect(() => {
         if (!orderId) {
@@ -22,36 +22,85 @@ export const OrderSuccess = () => {
             return;
         }
 
-        // Send confirmation email when order success page loads
-        const sendConfirmationEmail = async () => {
+        let cancelled = false;
+        const emailSentKey = `email_sent_${orderId}`;
+
+        const confirmPaymentAndSendEmail = async () => {
             try {
                 setLoading(true);
 
-                // Fetch order details from Supabase
                 const { data: order, error: orderError } = await supabase
                     .from('orders')
                     .select('*')
                     .eq('id', orderId)
                     .single();
 
-                if (orderError) {
+                if (cancelled) return;
+
+                if (orderError || !order) {
                     console.error('Error fetching order:', orderError);
-                    setEmailError(true);
+                    navigate('/');
+                    return;
+                }
+
+                // Payment was not successful — send the customer home
+                // instead of showing a confirmation screen or emailing them.
+                if (order.status !== 'paid') {
+                    setRedirecting(true);
+                    navigate('/');
+                    return;
+                }
+
+                // Already emailed for this order in this browser — don't resend.
+                if (sessionStorage.getItem(emailSentKey)) {
+                    setEmailSent(true);
                     setLoading(false);
                     return;
                 }
 
-                if (!order) {
-                    console.error('Order not found');
-                    setEmailError(true);
-                    setLoading(false);
-                    return;
+                // Resolve customer email/name from auth + profile,
+                // since orders doesn't store these directly.
+                let resolvedEmail = user?.email || '';
+                let userName = 'Customer';
+
+                if (user?.id) {
+                    const { data: profile, error: profileError } = await supabase
+                        .from('profiles')
+                        .select('full_name, email')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (!profileError && profile) {
+                        userName = profile.full_name || 'Customer';
+                        if (profile.email) {
+                            resolvedEmail = profile.email;
+                        }
+                    }
                 }
 
-                // Get the current session for authorization
+                const { data: itemsData, error: itemsError } = await supabase
+                    .from('order_items')
+                    .select('*')
+                    .eq('order_id', orderId);
+
+                if (itemsError) {
+                    console.error('Error fetching order items:', itemsError);
+                }
+
+                const formattedItems = (itemsData && itemsData.length > 0)
+                    ? itemsData.map((item: any) => ({
+                        name: item.product_name || 'Product',
+                        quantity: item.quantity || 1,
+                        price: parseFloat(item.price) || 0,
+                    }))
+                    : [{
+                        name: 'Order Items',
+                        quantity: 1,
+                        price: parseFloat(order.total) || 0,
+                    }];
+
                 const { data: { session } } = await supabase.auth.getSession();
 
-                // Call the Edge Function to send email
                 const response = await fetch(
                     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`,
                     {
@@ -61,41 +110,58 @@ export const OrderSuccess = () => {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            to: order.customer_email,
-                            customerName: order.customer_name,
+                            to: resolvedEmail,
+                            customerName: userName,
                             orderId: order.id,
-                            orderTotal: order.total,
-                            transactionId: order.transaction_id || '',
-                            items: order.items || []
-                        })
+                            orderTotal: parseFloat(order.total) || 0,
+                            transactionId: order.stitch_payment_id || '',
+                            items: formattedItems,
+                        }),
                     }
                 );
 
                 const result = await response.json();
 
+                if (cancelled) return;
+
                 if (result.success) {
-                    console.log('✅ Confirmation email sent successfully');
+                    sessionStorage.setItem(emailSentKey, 'true');
                     setEmailSent(true);
                 } else {
                     console.error('❌ Failed to send email:', result.error);
                     setEmailError(true);
                 }
             } catch (error) {
-                console.error('❌ Error sending email:', error);
-                setEmailError(true);
+                if (!cancelled) {
+                    console.error('❌ Error sending email:', error);
+                    setEmailError(true);
+                }
             } finally {
-                setLoading(false);
+                if (!cancelled) {
+                    setLoading(false);
+                }
             }
         };
 
-        sendConfirmationEmail();
-    }, [orderId, navigate]);
+        confirmPaymentAndSendEmail();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [orderId, user, navigate]);
+
+    if (redirecting) {
+        return (
+            <main className="min-h-[60vh] py-16 md:py-24 flex items-center justify-center">
+                <p className="text-[#8A8378] text-sm">Redirecting...</p>
+            </main>
+        );
+    }
 
     return (
         <main className="min-h-[60vh] py-16 md:py-24">
             <div className="max-w-[1440px] mx-auto px-6">
                 <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto">
-                    {/* Success Icon */}
                     <div className="w-24 h-24 bg-[#6B5D4F] rounded-full flex items-center justify-center mb-8">
                         <svg
                             className="h-12 w-12 text-white"
@@ -127,7 +193,6 @@ export const OrderSuccess = () => {
                         </p>
                     )}
 
-                    {/* Email Status Messages */}
                     {loading && (
                         <div className="mb-6 flex items-center gap-2 text-[#8A8378]">
                             <svg className="animate-spin h-5 w-5 text-[#6B5D4F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -177,7 +242,6 @@ export const OrderSuccess = () => {
                         </button>
                     </div>
 
-                    {/* Order Details Summary */}
                     <div className="mt-12 pt-8 border-t border-[#D5C9B9] w-full">
                         <h3 className="text-sm font-medium text-[#2C2420] uppercase tracking-wider mb-4">
                             What Happens Next?
