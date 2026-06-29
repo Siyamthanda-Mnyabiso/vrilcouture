@@ -32,7 +32,7 @@ export const Checkout = () => {
         country: 'South Africa',
     });
 
-    const shipping = subtotal >= 1000 ? 0 : 109;
+    const shipping = subtotal >= 1000 ? 0 : 100;
     const total = subtotal + shipping;
 
     useEffect(() => {

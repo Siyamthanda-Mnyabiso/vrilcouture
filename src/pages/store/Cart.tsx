@@ -10,7 +10,7 @@ export const Cart = () => {
     const { items, subtotal, itemCount, clearCart, updateQuantity, removeItem } = useCart();
 
 
-    const shipping = subtotal >= 1000 ? 0 : 109;
+    const shipping = subtotal >= 1000 ? 0 : 100;
     const total = subtotal  + shipping;
 
 
