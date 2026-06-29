@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+
 declare global {
     interface Window {
         YT: any;
@@ -9,7 +10,7 @@ declare global {
 
 const PLAYLIST_ID = 'PLT5P1VUNTt8Uxg65U3SbIo_g377joGDun';
 
-export default function MusicPlayer(): JSX.Element {
+export default function MusicPlayer(): React.JSX.Element {
     const playerRef = useRef<any | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
