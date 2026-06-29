@@ -30,9 +30,9 @@ export const CartSummary = ({
             </div>
 
             {/* Free shipping threshold notice */}
-            {shipping > 0 && subtotal < 2550 && (
+            {shipping > 0 && subtotal < 1000 && (
                 <p className="text-xs text-black/50 text-right">
-                    Add {format(2550 - subtotal)} more for free shipping
+                    Add {format(1000 - subtotal)} more for free shipping
                 </p>
             )}
 
