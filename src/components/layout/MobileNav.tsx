@@ -1,21 +1,39 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+interface NavSection {
+    title: string;
+    items: string[];
+}
+
+interface Category {
+    id: string;
+    name: string;
+    slug: string;
+}
 
 interface MobileNavProps {
     isOpen: boolean;
     onClose: () => void;
+    navigation: NavSection[];
+    categories: Category[];
 }
 
-export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
+export const MobileNav = ({ isOpen, onClose, navigation, categories }: MobileNavProps) => {
     const { user, signOut } = useAuth();
+    const [openSection, setOpenSection] = useState<string | null>(null);
 
-    const navItems = [
+    const toggleSection = (title: string) => {
+        setOpenSection((prev) => (prev === title ? null : title));
+    };
+
+    const topLinks = [
         { label: 'Home', path: '/' },
+        { label: 'About', path: '/about' },
         { label: 'Shop', path: '/shop' },
-        { label: 'Men', path: '/category/men' },
-        { label: 'Women', path: '/category/women' },
-        { label: 'Kids', path: '/category/kids' },
-        { label: 'Accessories', path: '/category/accessories' },
+        { label: 'Contact', path: '/contact' },
     ];
 
     if (!isOpen) return null;
@@ -29,16 +47,16 @@ export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
             />
 
             {/* Menu */}
-            <div className="fixed top-0 left-0 bottom-0 z-50 w-80 bg-white shadow-xl animate-in slide-in-from-left duration-300">
+            <div className="fixed top-0 left-0 bottom-0 z-50 w-full max-w-xs sm:w-80 bg-white shadow-xl animate-in slide-in-from-left duration-300">
                 <div className="flex flex-col h-full">
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-black">
-            <span
-                className="text-black text-2xl font-bold tracking-wider"
-                style={{ fontFamily: "'Big Shoulders Display', sans-serif" }}
-            >
-              VRIL COUTURE
-            </span>
+                    <div className="flex items-center justify-between p-6 border-b border-black shrink-0">
+                        <span
+                            className="text-black text-xl sm:text-2xl font-bold tracking-wider"
+                            style={{ fontFamily: "'Big Shoulders Display', sans-serif" }}
+                        >
+                            VRIL COUTURE
+                        </span>
                         <button
                             onClick={onClose}
                             className="text-black hover:opacity-60 transition-opacity"
@@ -52,8 +70,10 @@ export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
 
                     {/* Navigation */}
                     <nav className="flex-1 overflow-y-auto p-6">
-                        <ul className="space-y-4">
-                            {navItems.map((item) => (
+
+                        {/* Top-level links — matches desktop Home / About / Shop / Contact */}
+                        <ul className="space-y-4 pb-6 border-b border-black/10">
+                            {topLinks.map((item) => (
                                 <li key={item.path}>
                                     <Link
                                         to={item.path}
@@ -66,8 +86,102 @@ export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
                             ))}
                         </ul>
 
+                        {/* Category accordion — mirrors desktop Shop dropdown */}
+                        <ul className="pt-2">
+                            {navigation.map((section) => {
+                                const isOpenSection = openSection === section.title;
+                                const hasItems = section.items.length > 0;
+
+                                return (
+                                    <li key={section.title} className="border-b border-black/10">
+                                        {hasItems ? (
+                                            <>
+                                                <button
+                                                    onClick={() => toggleSection(section.title)}
+                                                    className="w-full flex items-center justify-between py-4 text-left"
+                                                    aria-expanded={isOpenSection}
+                                                >
+                                                    <span className="text-xs tracking-[0.3em] font-bold">
+                                                        {section.title}
+                                                    </span>
+                                                    <ChevronDown
+                                                        className={`w-4 h-4 transition-transform ${isOpenSection ? 'rotate-180' : ''}`}
+                                                    />
+                                                </button>
+
+                                                {isOpenSection && (
+                                                    <div className="pb-4 pl-2">
+                                                        {section.items.map((item) => (
+                                                            <Link
+                                                                key={item}
+                                                                to={`/category/${item.toLowerCase().replaceAll(' ', '-')}`}
+                                                                onClick={onClose}
+                                                                className="block text-sm py-2 hover:opacity-60 transition-opacity"
+                                                            >
+                                                                {item}
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <Link
+                                                to={`/category/${section.title.toLowerCase()}`}
+                                                onClick={onClose}
+                                                className="block py-4 text-xs tracking-[0.3em] font-bold hover:opacity-60 transition-opacity"
+                                            >
+                                                {section.title}
+                                            </Link>
+                                        )}
+                                    </li>
+                                );
+                            })}
+
+                            {/* Dynamic COLLECTIONS — mirrors desktop's useCategories() section */}
+                            {categories.length > 0 && (
+                                <li className="border-b border-black/10">
+                                    <button
+                                        onClick={() => toggleSection('COLLECTIONS')}
+                                        className="w-full flex items-center justify-between py-4 text-left"
+                                        aria-expanded={openSection === 'COLLECTIONS'}
+                                    >
+                                        <span className="text-xs tracking-[0.3em] font-bold">
+                                            COLLECTIONS
+                                        </span>
+                                        <ChevronDown
+                                            className={`w-4 h-4 transition-transform ${openSection === 'COLLECTIONS' ? 'rotate-180' : ''}`}
+                                        />
+                                    </button>
+
+                                    {openSection === 'COLLECTIONS' && (
+                                        <div className="pb-4 pl-2">
+                                            {categories.slice(0, 5).map((cat) => (
+                                                <Link
+                                                    key={cat.id}
+                                                    to={`/category/${cat.slug}`}
+                                                    onClick={onClose}
+                                                    className="block text-sm py-2 hover:opacity-60 transition-opacity"
+                                                >
+                                                    {cat.name}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    )}
+                                </li>
+                            )}
+                        </ul>
+
+                        {/* SHOP ALL — matches desktop dropdown footer */}
+                        <Link
+                            to="/shop"
+                            onClick={onClose}
+                            className="block py-4 text-xs uppercase tracking-[0.3em] hover:opacity-60 transition-opacity"
+                        >
+                            SHOP ALL
+                        </Link>
+
                         {/* Auth buttons */}
-                        <div className="mt-8 pt-8 border-t border-black">
+                        <div className="mt-4 pt-8 border-t border-black">
                             {user ? (
                                 <div className="space-y-4">
                                     <p className="text-black text-sm">

@@ -646,6 +646,8 @@ export function Navbar() {
             <MobileNav
                 isOpen={mobileNavOpen}
                 onClose={()=>setMobileNavOpen(false)}
+                navigation={navigation}
+                categories={categories}
             />
 
         </>
