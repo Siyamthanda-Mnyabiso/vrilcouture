@@ -8,6 +8,7 @@ import { useCategories } from '../../hooks/useCategories';
 import { useSearch } from '../../hooks/useSearch';
 import { AccountDropdown } from './AccountDropdown';
 import { MobileNav } from './MobileNav';
+import MusicPlayer from '../layout/MusicPlayer';
 
 
 const navigation = [
@@ -420,24 +421,8 @@ export function Navbar() {
                 <div className="flex items-center gap-4">
 
 
-                    <div className="
-                    hidden
-                    lg:block
-                    w-[260px]
-                    ">
-
-                        <iframe
-                            title="VRIL — Structure and Shadow"
-                            style={{ borderRadius: '12px' }}
-                            src="https://open.spotify.com/embed/playlist/0l16SNt9CgXXbLHpobxQlN?utm_source=generator"
-                            width="100%"
-                            height="80"
-                            frameBorder="0"
-                            allowFullScreen
-                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                            loading="lazy"
-                        />
-
+                    <div className="hidden lg:flex items-center w-[260px]">
+                        <MusicPlayer />
                     </div>
 
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import MusicPlayer from '../layout/MusicPlayer'; // ✅ ADD THIS
 
 interface NavSection {
     title: string;
@@ -21,7 +22,7 @@ interface MobileNavProps {
     categories: Category[];
 }
 
-export const MobileNav = ({ isOpen, onClose, navigation, categories }: MobileNavProps) => {
+export const MobileNav = ({ isOpen, onClose, navigation }: MobileNavProps) => {
     const { user, signOut } = useAuth();
     const [openSection, setOpenSection] = useState<string | null>(null);
 
@@ -49,18 +50,16 @@ export const MobileNav = ({ isOpen, onClose, navigation, categories }: MobileNav
             {/* Menu */}
             <div className="fixed top-0 left-0 bottom-0 z-50 w-full max-w-xs sm:w-80 bg-white shadow-xl animate-in slide-in-from-left duration-300">
                 <div className="flex flex-col h-full">
+
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-black shrink-0">
-                        <span
-                            className="text-black text-xl sm:text-2xl font-bold tracking-wider"
-                            style={{ fontFamily: "'Big Shoulders Display', sans-serif" }}
-                        >
+                        <span className="text-black text-xl sm:text-2xl font-bold tracking-wider">
                             VRIL COUTURE
                         </span>
+
                         <button
                             onClick={onClose}
                             className="text-black hover:opacity-60 transition-opacity"
-                            aria-label="Close menu"
                         >
                             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="square" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -71,14 +70,14 @@ export const MobileNav = ({ isOpen, onClose, navigation, categories }: MobileNav
                     {/* Navigation */}
                     <nav className="flex-1 overflow-y-auto p-6">
 
-                        {/* Top-level links — matches desktop Home / About / Shop / Contact */}
+                        {/* Top links */}
                         <ul className="space-y-4 pb-6 border-b border-black/10">
                             {topLinks.map((item) => (
                                 <li key={item.path}>
                                     <Link
                                         to={item.path}
                                         onClick={onClose}
-                                        className="block text-black text-lg font-medium tracking-wide hover:opacity-60 transition-opacity"
+                                        className="block text-black text-lg font-medium"
                                     >
                                         {item.label}
                                     </Link>
@@ -86,146 +85,88 @@ export const MobileNav = ({ isOpen, onClose, navigation, categories }: MobileNav
                             ))}
                         </ul>
 
-                        {/* Category accordion — mirrors desktop Shop dropdown */}
+                        {/* Categories */}
                         <ul className="pt-2">
                             {navigation.map((section) => {
                                 const isOpenSection = openSection === section.title;
-                                const hasItems = section.items.length > 0;
 
                                 return (
                                     <li key={section.title} className="border-b border-black/10">
-                                        {hasItems ? (
-                                            <>
-                                                <button
-                                                    onClick={() => toggleSection(section.title)}
-                                                    className="w-full flex items-center justify-between py-4 text-left"
-                                                    aria-expanded={isOpenSection}
-                                                >
-                                                    <span className="text-xs tracking-[0.3em] font-bold">
-                                                        {section.title}
-                                                    </span>
-                                                    <ChevronDown
-                                                        className={`w-4 h-4 transition-transform ${isOpenSection ? 'rotate-180' : ''}`}
-                                                    />
-                                                </button>
-
-                                                {isOpenSection && (
-                                                    <div className="pb-4 pl-2">
-                                                        {section.items.map((item) => (
-                                                            <Link
-                                                                key={item}
-                                                                to={`/category/${item.toLowerCase().replaceAll(' ', '-')}`}
-                                                                onClick={onClose}
-                                                                className="block text-sm py-2 hover:opacity-60 transition-opacity"
-                                                            >
-                                                                {item}
-                                                            </Link>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <Link
-                                                to={`/category/${section.title.toLowerCase()}`}
-                                                onClick={onClose}
-                                                className="block py-4 text-xs tracking-[0.3em] font-bold hover:opacity-60 transition-opacity"
-                                            >
+                                        <button
+                                            onClick={() => toggleSection(section.title)}
+                                            className="w-full flex justify-between py-4 text-left"
+                                        >
+                                            <span className="text-xs tracking-[0.3em] font-bold">
                                                 {section.title}
-                                            </Link>
+                                            </span>
+
+                                            <ChevronDown
+                                                className={`w-4 h-4 transition-transform ${
+                                                    isOpenSection ? 'rotate-180' : ''
+                                                }`}
+                                            />
+                                        </button>
+
+                                        {isOpenSection && (
+                                            <div className="pb-4 pl-2">
+                                                {section.items.map((item) => (
+                                                    <Link
+                                                        key={item}
+                                                        to={`/category/${item.toLowerCase().replaceAll(' ', '-')}`}
+                                                        onClick={onClose}
+                                                        className="block text-sm py-2"
+                                                    >
+                                                        {item}
+                                                    </Link>
+                                                ))}
+                                            </div>
                                         )}
                                     </li>
                                 );
                             })}
-
-                            {/* Dynamic COLLECTIONS — mirrors desktop's useCategories() section */}
-                            {categories.length > 0 && (
-                                <li className="border-b border-black/10">
-                                    <button
-                                        onClick={() => toggleSection('COLLECTIONS')}
-                                        className="w-full flex items-center justify-between py-4 text-left"
-                                        aria-expanded={openSection === 'COLLECTIONS'}
-                                    >
-                                        <span className="text-xs tracking-[0.3em] font-bold">
-                                            COLLECTIONS
-                                        </span>
-                                        <ChevronDown
-                                            className={`w-4 h-4 transition-transform ${openSection === 'COLLECTIONS' ? 'rotate-180' : ''}`}
-                                        />
-                                    </button>
-
-                                    {openSection === 'COLLECTIONS' && (
-                                        <div className="pb-4 pl-2">
-                                            {categories.slice(0, 5).map((cat) => (
-                                                <Link
-                                                    key={cat.id}
-                                                    to={`/category/${cat.slug}`}
-                                                    onClick={onClose}
-                                                    className="block text-sm py-2 hover:opacity-60 transition-opacity"
-                                                >
-                                                    {cat.name}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
-                                </li>
-                            )}
                         </ul>
 
-                        {/* SHOP ALL — matches desktop dropdown footer */}
+                        {/* SHOP ALL */}
                         <Link
                             to="/shop"
                             onClick={onClose}
-                            className="block py-4 text-xs uppercase tracking-[0.3em] hover:opacity-60 transition-opacity"
+                            className="block py-4 text-xs uppercase tracking-[0.3em]"
                         >
                             SHOP ALL
                         </Link>
 
-                        {/* Auth buttons */}
+                        {/* Auth */}
                         <div className="mt-4 pt-8 border-t border-black">
                             {user ? (
                                 <div className="space-y-4">
                                     <p className="text-black text-sm">
                                         Hello, {user.email}
                                     </p>
-                                    {user.role === 'admin' && (
-                                        <Link
-                                            to="/admin/products"
-                                            onClick={onClose}
-                                            className="block text-black text-sm font-medium uppercase tracking-wider hover:opacity-60 transition-opacity"
-                                        >
-                                            Admin Dashboard
-                                        </Link>
-                                    )}
+
                                     <button
                                         onClick={() => {
                                             signOut();
                                             onClose();
                                         }}
-                                        className="text-black text-sm font-medium uppercase tracking-wider hover:opacity-60 transition-opacity"
                                     >
                                         Sign Out
                                     </button>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    <Link
-                                        to="/login"
-                                        onClick={onClose}
-                                        className="block w-full text-center px-4 py-3 bg-black text-white text-sm font-medium uppercase tracking-wider hover:bg-black/80 transition-colors"
-                                    >
+                                    <Link to="/login" onClick={onClose}>
                                         Sign In
-                                    </Link>
-                                    <Link
-                                        to="/register"
-                                        onClick={onClose}
-                                        className="block w-full text-center px-4 py-3 border-2 border-black text-black text-sm font-medium uppercase tracking-wider hover:bg-black hover:text-white transition-colors"
-                                    >
-                                        Create Account
                                     </Link>
                                 </div>
                             )}
                         </div>
                     </nav>
+
+                    {/* ✅ MUSIC PLAYER ADDED HERE (BOTTOM DOCK INSIDE NAV) */}
+                    <div className="border-t border-black/10 p-3 bg-white">
+                        <MusicPlayer />
+                    </div>
+
                 </div>
             </div>
         </>
