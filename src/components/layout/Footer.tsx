@@ -75,7 +75,7 @@ export const Footer = () => {
                                 South Africa
                             </li>
                             <li className="text-sm text-white/50">
-                                info@vrilcouture.com
+                                admin@vrilcouture.co.za
                             </li>
                         </ul>
                     </div>
