@@ -2,13 +2,14 @@ import { Outlet } from 'react-router-dom';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { SplashScreen } from './components/layout/SplashScreen';
+import { ScrollToTop } from './components/layout/ScrollToTop';
 import {TopAnnouncementBar} from "./components/layout/TopAnnouncementBar.tsx";
 
 
 export const App = () => {
     return (
         <div className="min-h-screen flex flex-col bg-white text-black">
-
+            <ScrollToTop />
             <SplashScreen />
             <TopAnnouncementBar />
             <Navbar />
