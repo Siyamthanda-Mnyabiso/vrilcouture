@@ -29,8 +29,13 @@ const FEATURES = [
     },
 ];
 
-const ACCOUNT_LINKS = ['My Profile', 'Order History', 'Order Tracking', 'Shopping Cart'];
-const SHOP_LINKS = ['New In', 'Lookbook', 'Drops', 'Sale'];
+const ACCOUNT_LINKS = [
+    { label: 'My Profile', to: '/account' },
+    { label: 'Order History', to: '/account/orders' },
+    { label: 'Order Tracking', to: '/account/orders' },
+    { label: 'Shopping Cart', to: '/cart' },
+];
+const SHOP_LINKS = [{ label: 'New In', to: '/shop' }];
 
 const PAYMENT_METHODS = [
     { label: 'Visa', logo: '/payments/visa.webp' },
@@ -113,10 +118,10 @@ export const Footer = () => {
                         </h4>
 
                         <ul className="space-y-3">
-                            {ACCOUNT_LINKS.map((item) => (
-                                <li key={item}>
-                                    <Link to="#" className="text-white/50 hover:text-white text-sm">
-                                        {item}
+                            {ACCOUNT_LINKS.map(({ label, to }) => (
+                                <li key={label}>
+                                    <Link to={to} className="text-white/50 hover:text-white text-sm">
+                                        {label}
                                     </Link>
                                 </li>
                             ))}
@@ -130,10 +135,10 @@ export const Footer = () => {
                         </h4>
 
                         <ul className="space-y-3">
-                            {SHOP_LINKS.map((item) => (
-                                <li key={item}>
-                                    <Link to="#" className="text-white/50 hover:text-white text-sm">
-                                        {item}
+                            {SHOP_LINKS.map(({ label, to }) => (
+                                <li key={label}>
+                                    <Link to={to} className="text-white/50 hover:text-white text-sm">
+                                        {label}
                                     </Link>
                                 </li>
                             ))}

@@ -11,10 +11,11 @@ export const CategoryDetails = () => {
     const { slug } = useParams<{ slug: string }>();
 
     const [category, setCategory] = useState<Category | null>(null);
+    const [categoryChecked, setCategoryChecked] = useState(false);
 
-    const { categories, fetchCategories } = useCategories();
+    const { categories, loading: categoriesLoading, fetchCategories } = useCategories();
 
-    const { products, fetchProducts, loading } = useProducts();
+    const { products, fetchProducts, loading: productsLoading } = useProducts();
 
 
 
@@ -27,7 +28,7 @@ export const CategoryDetails = () => {
 
     useEffect(() => {
 
-        if (!slug || categories.length === 0) return;
+        if (!slug || categoriesLoading) return;
 
 
         const categoryData = categories.find(
@@ -36,6 +37,7 @@ export const CategoryDetails = () => {
 
 
         setCategory(categoryData);
+        setCategoryChecked(true);
 
 
 
@@ -48,13 +50,15 @@ export const CategoryDetails = () => {
         }
 
 
-    }, [slug, categories]);
+    }, [slug, categories, categoriesLoading]);
 
 
 
+    // Still waiting on categories to load, or we haven't finished checking
+    // whether this slug matches a real category yet.
+    const isLoading = categoriesLoading || !categoryChecked || (!!category && productsLoading);
 
-
-    if (loading) {
+    if (isLoading) {
 
         return (
 

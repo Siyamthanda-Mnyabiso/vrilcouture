@@ -34,11 +34,17 @@ export default function MusicPlayer(): React.JSX.Element {
                 playerVars: {
                     listType: 'playlist',
                     list: PLAYLIST_ID,
-                    autoplay: 0,
+                    autoplay: 1,
                     controls: 0,
                 },
                 events: {
-                    onReady: () => setIsReady(true),
+                    onReady: () => {
+                        setIsReady(true);
+                        try {
+                            playerRef.current.setVolume(50);
+                            playerRef.current.playVideo();
+                        } catch {}
+                    },
 
                     onStateChange: (event: any) => {
                         setIsPlaying(
