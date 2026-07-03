@@ -20,6 +20,7 @@ export const Checkout = () => {
     const [validatingItems, setValidatingItems] = useState(false);
     const [testMode, setTestMode] = useState(false);
     const [debugInfo, setDebugInfo] = useState<any>(null);
+    const [stitchAccepted, setStitchAccepted] = useState(false);
 
     const [formData, setFormData] = useState({
         email: user?.email || '',
@@ -464,12 +465,118 @@ export const Checkout = () => {
                             </div>
                         </section>
 
+                        <div className="border border-black/10 p-6">
+
+                            {/* Title */}
+                            <div className="mb-5">
+                                <h3 className="text-sm uppercase tracking-[0.2em]">
+                                    Stitch Payments
+                                </h3>
+
+                                {/* Stitch acceptance row */}
+                                <label
+                                    className="flex items-start justify-between gap-4 mt-3 cursor-pointer"
+                                    onClick={() => setStitchAccepted(prev => !prev)}
+                                >
+                                    <div className="text-xs text-black/50 leading-relaxed">
+                                        Use Stitch to securely complete your payment.
+                                    </div>
+
+                                    <input
+                                        type="radio"
+                                        name="stitch"
+                                        checked={stitchAccepted}
+                                        readOnly
+                                        className="mt-1 accent-black"
+                                    />
+                                </label>
+                            </div>
+
+                            {/* Payment Options (display only, NOT selectable) */}
+                            <div className="space-y-3">
+
+                                {/* Visa */}
+                                <div className="border border-black/10 p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <img src="/payments/visa.webp" className="h-5 w-auto" />
+                                        <div>
+                                            <p className="text-sm uppercase tracking-wide">Visa</p>
+                                            <p className="text-xs text-black/40">
+                                                Pay securely with Visa via Stitch
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <span className="text-xs text-black/40 uppercase tracking-widest">
+                Available
+            </span>
+                                </div>
+
+                                {/* Mastercard */}
+                                <div className="border border-black/10 p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <img src="/payments/mastercard.png" className="h-5 w-auto" />
+                                        <div>
+                                            <p className="text-sm uppercase tracking-wide">Mastercard</p>
+                                            <p className="text-xs text-black/40">
+                                                Pay securely with Mastercard via Stitch
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <span className="text-xs text-black/40 uppercase tracking-widest">
+                Available
+            </span>
+                                </div>
+
+                                {/* Apple Pay */}
+                                <div className="border border-black/10 p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <img src="/payments/apple-pay-blk.png" className="h-5 w-auto" />
+                                        <div>
+                                            <p className="text-sm uppercase tracking-wide">Apple Pay</p>
+                                            <p className="text-xs text-black/40">
+                                                Fast checkout with Apple Pay via Stitch
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <span className="text-xs text-black/40 uppercase tracking-widest">
+                Instant
+            </span>
+                                </div>
+
+                                {/* Capitec */}
+                                <div className="border border-black/10 p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <img src="/payments/capitec.webp" className="h-5 w-auto" />
+                                        <div>
+                                            <p className="text-sm uppercase tracking-wide">Capitec Pay</p>
+                                            <p className="text-xs text-black/40">
+                                                Pay directly from your bank via Stitch
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <span className="text-xs text-black/40 uppercase tracking-widest">
+                Secure
+            </span>
+                                </div>
+
+                            </div>
+
+                        </div>
+
                         <Button
                             type="submit"
                             size="lg"
                             fullWidth
                             isLoading={isProcessing || validatingItems}
-                            disabled={validatingItems || items.length === 0}
+                            disabled={
+                                validatingItems ||
+                                items.length === 0 ||
+                                !stitchAccepted
+                            }
                         >
                             {validatingItems
                                 ? 'Validating...'

@@ -7,6 +7,7 @@ import { ProductGrid } from '../../components/product/ProductGrid';
 import { CategoryBanner } from '../../components/category/CategoryBanner';
 import { useProducts } from '../../hooks/useProducts';
 
+
 export const Home = () => {
     const { products, loading: productsLoading, fetchProducts } = useProducts();
 
@@ -20,6 +21,7 @@ export const Home = () => {
 
     return (
         <main>
+
             <Hero />
 
             <AnnouncementBar />
