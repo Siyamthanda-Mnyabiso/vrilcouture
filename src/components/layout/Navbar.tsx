@@ -8,7 +8,7 @@ import { useCategories } from '../../hooks/useCategories';
 import { useSearch } from '../../hooks/useSearch';
 import { AccountDropdown } from './AccountDropdown';
 import { MobileNav } from './MobileNav';
-import MusicPlayer from '../layout/MusicPlayer';
+
 
 
 const navigation = [
@@ -421,8 +421,38 @@ export function Navbar() {
                 <div className="flex items-center gap-4">
 
 
-                    <div className="hidden lg:flex items-center w-[260px]">
-                        <MusicPlayer />
+                    <div className="hidden lg:flex flex-col items-center gap-2 w-[300px]">
+                        <iframe
+                            style={{ borderRadius: "12px" }}
+                            src="https://open.spotify.com/embed/album/0Hr4UiqidZHMMzCMTFXxzD?utm_source=generator"
+                            width="100%"
+                            height="80"
+                            frameBorder="0"
+                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            loading="lazy"
+                            title="Spotify Album"
+                        />
+
+                        <a
+                            href="https://open.spotify.com/album/0Hr4UiqidZHMMzCMTFXxzD"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="
+            w-full
+            text-center
+            bg-black
+            text-white
+            text-[10px]
+            uppercase
+            tracking-[0.25em]
+            py-2
+            rounded-full
+            hover:bg-neutral-800
+            transition
+        "
+                        >
+                            ▶ Play on Spotify
+                        </a>
                     </div>
 
 

@@ -181,7 +181,49 @@ export const MobileNav = ({ isOpen, onClose, navigation, categories }: MobileNav
                         </Link>
 
                         {/* Auth buttons */}
-                        <div className="mt-4 pt-8 border-t border-black">
+                        {/* Spotify Player */}
+                        <div className="mt-8 pt-6 border-t border-black/10">
+                            <h3 className="text-xs uppercase tracking-[0.3em] font-bold mb-4">
+                                Now Playing
+                            </h3>
+
+                            <iframe
+                                style={{ borderRadius: "12px" }}
+                                src="https://open.spotify.com/embed/album/0Hr4UiqidZHMMzCMTFXxzD?utm_source=generator"
+                                width="100%"
+                                height="152"
+                                frameBorder="0"
+                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                loading="lazy"
+                                title="Spotify Album"
+                            />
+
+                            <a
+                                href="https://open.spotify.com/album/0Hr4UiqidZHMMzCMTFXxzD"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="
+            mt-4
+            block
+            w-full
+            text-center
+            bg-black
+            text-white
+            text-xs
+            uppercase
+            tracking-[0.3em]
+            py-3
+            rounded-full
+            hover:bg-neutral-800
+            transition
+        "
+                            >
+                                ▶ Play on Spotify
+                            </a>
+                        </div>
+
+                        {/* Auth buttons */}
+                        <div className="mt-8 pt-8 border-t border-black">
                             {user ? (
                                 <div className="space-y-4">
                                     <p className="text-black text-sm">
