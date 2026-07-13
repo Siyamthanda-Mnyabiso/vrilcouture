@@ -80,9 +80,9 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="lg">
-            <div className="flex flex-col sm:flex-row gap-6">
-                <div className="w-full sm:w-40 shrink-0 aspect-[3/4] bg-gray-100 overflow-hidden">
+        <Modal isOpen={isOpen} onClose={onClose} size="xl">
+            <div className="flex flex-col sm:flex-row gap-8">
+                <div className="w-full sm:w-80 shrink-0 aspect-[3/4] bg-gray-100 overflow-hidden">
                     {product.image_url ? (
                         <img
                             src={product.image_url}
@@ -91,20 +91,20 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                         />
                     ) : (
                         <div className="flex h-full items-center justify-center">
-                            <ImageOff className="w-8 h-8 text-gray-400" />
+                            <ImageOff className="w-12 h-12 text-gray-400" />
                         </div>
                     )}
                 </div>
 
-                <div className="flex-1 flex flex-col gap-4">
+                <div className="flex-1 flex flex-col gap-6">
                     <div>
-                        <p className="text-[11px] uppercase tracking-[0.3em] text-black/40 mb-1">
+                        <p className="text-xs uppercase tracking-[0.3em] text-black/40 mb-2">
                             {product.brand || 'Vril Couture'}
                         </p>
-                        <h3 className="text-lg font-medium uppercase tracking-tight text-black">
+                        <h3 className="text-2xl font-medium uppercase tracking-tight text-black">
                             {product.name}
                         </h3>
-                        <p className="text-base font-semibold text-black mt-1">
+                        <p className="text-xl font-semibold text-black mt-2">
                             R{product.price.toFixed(2)}
                         </p>
                     </div>
@@ -112,12 +112,12 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                     {variantsLoading ? (
                         <p className="text-xs text-black/40 uppercase tracking-wide">Loading options...</p>
                     ) : hasVariants ? (
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-5">
                             <div>
-                                <p className="text-[11px] uppercase tracking-[0.25em] text-black/40 mb-2">
+                                <p className="text-xs uppercase tracking-[0.25em] text-black/40 mb-3">
                                     Size
                                 </p>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-2.5">
                                     {sizes.map((size) => {
                                         const isSelected = selectedSize === size;
                                         const sizeHasAnyStock = variants.some((v) => v.size === size && v.stock > 0);
@@ -127,7 +127,7 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                                                 type="button"
                                                 onClick={() => { setSelectedSize(size); setQuantity(1); }}
                                                 disabled={!sizeHasAnyStock}
-                                                className={`min-w-[40px] h-9 px-3 text-xs uppercase tracking-wide rounded-full border transition-colors ${
+                                                className={`min-w-[44px] h-11 px-4 text-sm uppercase tracking-wide rounded-full border transition-colors ${
                                                     isSelected
                                                         ? 'border-black bg-black text-white'
                                                         : 'border-black/20 text-black hover:border-black'
@@ -141,10 +141,10 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                             </div>
 
                             <div>
-                                <p className="text-[11px] uppercase tracking-[0.25em] text-black/40 mb-2">
+                                <p className="text-xs uppercase tracking-[0.25em] text-black/40 mb-3">
                                     Color
                                 </p>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-2.5">
                                     {colors.map((color) => {
                                         const isSelected = selectedColor === color;
                                         const disabled = !selectedSize || !isColorAvailableForSize(selectedSize, color);
@@ -154,7 +154,7 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                                                 type="button"
                                                 onClick={() => { setSelectedColor(color); setQuantity(1); }}
                                                 disabled={disabled}
-                                                className={`h-9 px-3 text-xs uppercase tracking-wide rounded-full border transition-colors ${
+                                                className={`h-11 px-4 text-sm uppercase tracking-wide rounded-full border transition-colors ${
                                                     isSelected
                                                         ? 'border-black bg-black text-white'
                                                         : 'border-black/20 text-black hover:border-black'
@@ -173,28 +173,28 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                         </div>
                     ) : null}
 
-                    <div className="flex items-center gap-3 mt-auto">
-                        <div className="flex items-center border border-black/20 h-11 shrink-0">
+                    <div className="flex items-center gap-4 mt-auto">
+                        <div className="flex items-center border border-black/20 h-12 shrink-0">
                             <button
                                 type="button"
                                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                                 disabled={quantity <= 1}
-                                className="w-9 h-full flex items-center justify-center text-black hover:bg-black/5 disabled:opacity-30 transition-colors"
+                                className="w-10 h-full flex items-center justify-center text-black hover:bg-black/5 disabled:opacity-30 transition-colors"
                                 aria-label="Decrease quantity"
                             >
-                                <Minus className="w-3.5 h-3.5" />
+                                <Minus className="w-4 h-4" />
                             </button>
-                            <span className="w-8 text-center text-sm font-medium text-black">
+                            <span className="w-10 text-center text-sm font-medium text-black">
                                 {quantity}
                             </span>
                             <button
                                 type="button"
                                 onClick={() => setQuantity((q) => Math.min(maxQuantity || 1, q + 1))}
                                 disabled={maxQuantity > 0 && quantity >= maxQuantity}
-                                className="w-9 h-full flex items-center justify-center text-black hover:bg-black/5 disabled:opacity-30 transition-colors"
+                                className="w-10 h-full flex items-center justify-center text-black hover:bg-black/5 disabled:opacity-30 transition-colors"
                                 aria-label="Increase quantity"
                             >
-                                <Plus className="w-3.5 h-3.5" />
+                                <Plus className="w-4 h-4" />
                             </button>
                         </div>
 
@@ -202,7 +202,7 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                             type="button"
                             onClick={handleAddToCart}
                             disabled={!canAddToCart}
-                            className="flex-1 h-11 bg-black text-white text-xs uppercase tracking-[0.3em] hover:bg-black/85 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-black"
+                            className="flex-1 h-12 bg-black text-white text-xs uppercase tracking-[0.3em] hover:bg-black/85 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-black"
                         >
                             {justAdded
                                 ? 'Added To Cart'
