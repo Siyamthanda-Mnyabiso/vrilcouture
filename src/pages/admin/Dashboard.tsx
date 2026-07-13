@@ -8,8 +8,11 @@ import { Badge } from '../../components/ui/Badge';
 import { formatCurrency } from '../../utils/currency';
 import { formatDateTime } from '../../utils/dates';
 
+// A 'pending' order that never got a webhook confirmation is, from the
+// customer's perspective, indistinguishable from one that failed — no money
+// was received either way — so both display as "Not Paid".
 const statusVariant = {
-    pending: 'warning',
+    pending: 'error',
     paid: 'info',
     failed: 'error',
     fulfilled: 'success',
@@ -17,7 +20,7 @@ const statusVariant = {
 } as const;
 
 const statusLabels = {
-    pending: 'Pending',
+    pending: 'Not Paid',
     paid: 'Paid',
     failed: 'Not Paid',
     fulfilled: 'Fulfilled',

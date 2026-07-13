@@ -1,13 +1,16 @@
 // src/pages/admin/AdminOrders.tsx
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAdminOrders, type OrderStatus } from '../../hooks/useAdminOrders';
 import { Loader } from '../../components/ui/Loader';
 import { Badge } from '../../components/ui/Badge';
 import { formatCurrency } from '../../utils/currency';
 import { formatDateTime } from '../../utils/dates';
 
+// A 'pending' order that never got a webhook confirmation is, from the
+// customer's perspective, indistinguishable from one that failed — no money
+// was received either way — so both display as "Not Paid".
 const statusVariant: Record<OrderStatus, 'warning' | 'info' | 'success' | 'error'> = {
-    pending: 'warning',
+    pending: 'error',
     paid: 'info',
     failed: 'error',
     fulfilled: 'success',
@@ -15,37 +18,19 @@ const statusVariant: Record<OrderStatus, 'warning' | 'info' | 'success' | 'error
 };
 
 const statusLabels: Record<OrderStatus, string> = {
-    pending: 'Pending',
+    pending: 'Not Paid',
     paid: 'Paid',
     failed: 'Not Paid',
     fulfilled: 'Fulfilled',
     cancelled: 'Cancelled',
 };
 
-// Payment status (pending/paid/failed) is set exclusively by the
-// stitch-webhook function based on real payment confirmation — an admin
-// manually selecting "Paid" here would let the DB claim a payment happened
-// when it didn't. Only fulfillment-lifecycle transitions are admin-settable.
-const updatableStatusOptions: OrderStatus[] = ['fulfilled', 'cancelled'];
-
 export const AdminOrders = () => {
-    const { orders, loading, error, fetchOrders, updateOrderStatus } = useAdminOrders();
-    const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const { orders, loading, error, fetchOrders } = useAdminOrders();
 
     useEffect(() => {
         fetchOrders();
     }, []);
-
-    const handleStatusChange = async (id: string, status: OrderStatus) => {
-        setUpdatingId(id);
-        try {
-            await updateOrderStatus(id, status);
-        } catch (err) {
-            console.error('Failed to update order status:', err);
-        } finally {
-            setUpdatingId(null);
-        }
-    };
 
     if (loading) return <Loader />;
 
@@ -63,7 +48,6 @@ export const AdminOrders = () => {
                         <th className="p-3 text-gray-500 font-medium">Date</th>
                         <th className="p-3 text-gray-500 font-medium">Status</th>
                         <th className="p-3 text-gray-500 font-medium">Total</th>
-                        <th className="p-3 text-gray-500 font-medium">Update Status</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -79,32 +63,11 @@ export const AdminOrders = () => {
                                 </Badge>
                             </td>
                             <td className="p-3 text-black">{formatCurrency(order.total)}</td>
-                            <td className="p-3">
-                                <select
-                                    value={updatableStatusOptions.includes(order.status) ? order.status : ''}
-                                    disabled={updatingId === order.id}
-                                    onChange={(e) =>
-                                        handleStatusChange(order.id, e.target.value as OrderStatus)
-                                    }
-                                    className="border border-gray-300 rounded px-2 py-1 text-sm disabled:opacity-50"
-                                >
-                                    {!updatableStatusOptions.includes(order.status) && (
-                                        <option value="" disabled>
-                                            {statusLabels[order.status]}
-                                        </option>
-                                    )}
-                                    {updatableStatusOptions.map((s) => (
-                                        <option key={s} value={s}>
-                                            {statusLabels[s]}
-                                        </option>
-                                    ))}
-                                </select>
-                            </td>
                         </tr>
                     ))}
                     {orders.length === 0 && (
                         <tr>
-                            <td colSpan={5} className="p-6 text-center text-gray-400">
+                            <td colSpan={4} className="p-6 text-center text-gray-400">
                                 No orders yet.
                             </td>
                         </tr>

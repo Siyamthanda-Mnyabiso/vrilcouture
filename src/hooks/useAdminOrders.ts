@@ -36,24 +36,11 @@ export function useAdminOrders() {
         return data ?? [];
     };
 
-    const updateOrderStatus = async (id: string, status: OrderStatus) => {
-        const { data, error: updateError } = await supabase
-            .from('orders')
-            .update({ status, updated_at: new Date().toISOString() })
-            .eq('id', id)
-            .select()
-            .single();
-        if (updateError) throw updateError;
-        setOrders((prev) => prev.map((o) => (o.id === id ? (data as Order) : o)));
-        return data as Order;
-    };
-
     return {
         orders,
         loading,
         error,
         fetchOrders,
         fetchOrderItems,
-        updateOrderStatus,
     };
 }
