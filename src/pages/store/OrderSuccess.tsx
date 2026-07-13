@@ -10,10 +10,14 @@ import { supabase } from '../../lib/supabase';
 // was placed. The order only becomes 'paid' via the stitch-webhook function
 // (server-confirmed), which is also the only place that sends the
 // confirmation email — this page never triggers one itself.
-type PageState = 'loading' | 'paid' | 'pending' | 'not_placed' | 'not_found';
+type PageState = 'loading' | 'paid' | 'not_placed' | 'not_found';
 
 const POLL_INTERVAL_MS = 2000;
-const MAX_POLL_ATTEMPTS = 15; // ~30s of polling while the webhook catches up
+// Stitch sends no webhook at all for an abandoned/cancelled payment — every
+// real successful payment in testing has webhooked back within ~1s, so if
+// nothing has landed after this many attempts, treat it as not placed rather
+// than leaving the customer on an ambiguous "still waiting" screen.
+const MAX_POLL_ATTEMPTS = 15; // ~30s
 
 export const OrderSuccess = () => {
     const navigate = useNavigate();
@@ -60,7 +64,7 @@ export const OrderSuccess = () => {
 
             attempts += 1;
             if (attempts >= MAX_POLL_ATTEMPTS) {
-                setPageState('pending');
+                setPageState('not_placed');
                 return;
             }
             timer = setTimeout(checkOrder, POLL_INTERVAL_MS);
@@ -163,46 +167,6 @@ export const OrderSuccess = () => {
                                 className="px-8 py-3 bg-black text-white text-xs uppercase tracking-[0.3em] hover:bg-black/80 transition-colors"
                             >
                                 Return to Cart
-                            </button>
-                            <button
-                                onClick={() => navigate('/')}
-                                className="px-8 py-3 border border-black text-black text-xs uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-colors"
-                            >
-                                Return Home
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </main>
-        );
-    }
-
-    if (pageState === 'pending') {
-        return (
-            <main className="min-h-[60vh] py-16 md:py-24">
-                <div className="max-w-[1440px] mx-auto px-6">
-                    <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto">
-                        <h1 className="font-display text-4xl md:text-5xl uppercase tracking-tight text-black mb-4">
-                            Still Confirming
-                        </h1>
-                        <div className="w-12 h-0.5 bg-black mb-6" />
-                        <p className="text-black/50 text-lg mb-2">
-                            We're still waiting on confirmation from your payment provider.
-                        </p>
-                        {orderId && (
-                            <p className="text-black/40 text-sm mb-6">
-                                Order #{orderId}
-                            </p>
-                        )}
-                        <p className="text-black/50 mb-8">
-                            This can take a few minutes. You'll receive a confirmation email as soon as the payment clears — no need to try again.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <button
-                                onClick={() => window.location.reload()}
-                                className="px-8 py-3 bg-black text-white text-xs uppercase tracking-[0.3em] hover:bg-black/80 transition-colors"
-                            >
-                                Check Again
                             </button>
                             <button
                                 onClick={() => navigate('/')}
