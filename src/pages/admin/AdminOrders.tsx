@@ -22,7 +22,11 @@ const statusLabels: Record<OrderStatus, string> = {
     cancelled: 'Cancelled',
 };
 
-const statusOptions: OrderStatus[] = ['pending', 'paid', 'failed', 'fulfilled', 'cancelled'];
+// Payment status (pending/paid/failed) is set exclusively by the
+// stitch-webhook function based on real payment confirmation — an admin
+// manually selecting "Paid" here would let the DB claim a payment happened
+// when it didn't. Only fulfillment-lifecycle transitions are admin-settable.
+const updatableStatusOptions: OrderStatus[] = ['fulfilled', 'cancelled'];
 
 export const AdminOrders = () => {
     const { orders, loading, error, fetchOrders, updateOrderStatus } = useAdminOrders();
@@ -77,14 +81,19 @@ export const AdminOrders = () => {
                             <td className="p-3 text-black">{formatCurrency(order.total)}</td>
                             <td className="p-3">
                                 <select
-                                    value={order.status}
+                                    value={updatableStatusOptions.includes(order.status) ? order.status : ''}
                                     disabled={updatingId === order.id}
                                     onChange={(e) =>
                                         handleStatusChange(order.id, e.target.value as OrderStatus)
                                     }
                                     className="border border-gray-300 rounded px-2 py-1 text-sm disabled:opacity-50"
                                 >
-                                    {statusOptions.map((s) => (
+                                    {!updatableStatusOptions.includes(order.status) && (
+                                        <option value="" disabled>
+                                            {statusLabels[order.status]}
+                                        </option>
+                                    )}
+                                    {updatableStatusOptions.map((s) => (
                                         <option key={s} value={s}>
                                             {statusLabels[s]}
                                         </option>
