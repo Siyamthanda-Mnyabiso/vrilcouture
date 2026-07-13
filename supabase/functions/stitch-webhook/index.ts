@@ -63,16 +63,24 @@ serve(async (req) => {
     const payload = JSON.parse(rawBody)
     console.log('📨 Webhook received:', JSON.stringify(payload, null, 2))
 
-    // Extract order ID and payment status from Stitch payload
-    // NOTE: Adjust these fields based on Stitch's actual webhook format
-    const orderId = payload.orderId || payload.order_id || payload.reference
-    const paymentStatus = payload.status || payload.paymentStatus
-    const paymentId = payload.paymentId || payload.transactionId || payload.id
+    // Stitch Express "LINK" webhook events carry no orderId/order_id/reference
+    // field at all — confirmed from live payloads, e.g.:
+    //   { "id": "2E9AEbFmxhgLL1G2aRskkk", "linkId": "2E9AEbFmxhgLL1G2aRskkk",
+    //     "status": "PAID", "type": "LINK", "amount": 96800, ... }
+    // `id`/`linkId` is Stitch's own payment-link id, which checkout/index.ts
+    // already saves as orders.stitch_payment_id when the link is created —
+    // that's the join key, not orders.id. `status` also comes back uppercase
+    // ("PAID"), so comparisons must be case-insensitive.
+    const stitchPaymentId = payload.linkId || payload.id
+    const paymentStatus = String(payload.status || payload.paymentStatus || '').toUpperCase()
+    const paymentId = payload.id || payload.paymentId || payload.transactionId
 
-    console.log(`📦 Order ID: ${orderId}, Status: ${paymentStatus}, Payment ID: ${paymentId}`)
+    console.log(`📦 Stitch Payment ID: ${stitchPaymentId}, Status: ${paymentStatus}`)
 
-    // Only process if payment was successful
-    if (paymentStatus === 'successful' || paymentStatus === 'paid' || paymentStatus === 'completed') {
+    // Only "PAID" has been observed in production so far. SUCCESSFUL/COMPLETED
+    // are kept as a defensive fallback in case other Stitch event shapes use
+    // different wording — not confirmed against a real payload.
+    if (paymentStatus === 'PAID' || paymentStatus === 'SUCCESSFUL' || paymentStatus === 'COMPLETED') {
       // Initialize Supabase client with service role key for admin access
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') || '',
@@ -82,12 +90,12 @@ serve(async (req) => {
       // Update order status to paid
       const { data, error } = await supabaseClient
         .from('orders')
-        .update({ 
+        .update({
           status: 'paid',
           stitch_payment_id: paymentId,
           updated_at: new Date().toISOString()
         })
-        .eq('id', orderId)
+        .eq('stitch_payment_id', stitchPaymentId)
         .select()
         .single()
 
@@ -99,22 +107,16 @@ serve(async (req) => {
         )
       }
 
+      const orderId = data.id
       console.log(`✅ Order ${orderId} updated to paid`)
 
       // Fetch user email and send confirmation email
       try {
-        // Get user email from the order
-        const { data: orderData } = await supabaseClient
-          .from('orders')
-          .select('user_id')
-          .eq('id', orderId)
-          .single()
-
-        if (orderData?.user_id) {
+        if (data.user_id) {
           const { data: userData } = await supabaseClient
             .from('users')
             .select('email, full_name')
-            .eq('id', orderData.user_id)
+            .eq('id', data.user_id)
             .single()
 
           if (userData?.email) {
@@ -173,21 +175,23 @@ serve(async (req) => {
     } else {
       // Payment failed or other status
       console.log(`⚠️ Payment status: ${paymentStatus} - not updating order`)
-      
-      // Optionally update order status to 'failed'
-      if (paymentStatus === 'failed' || paymentStatus === 'cancelled') {
+
+      // Optionally update order status to 'failed'. These status values are
+      // inferred (uppercase, matching the confirmed "PAID" case) — not yet
+      // observed against a real failed/cancelled Stitch Express payload.
+      if (['FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED', 'DECLINED'].includes(paymentStatus)) {
         const supabaseClient = createClient(
           Deno.env.get('SUPABASE_URL') || '',
           Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
         )
-        
+
         await supabaseClient
           .from('orders')
-          .update({ 
+          .update({
             status: 'failed',
             updated_at: new Date().toISOString()
           })
-          .eq('id', orderId)
+          .eq('stitch_payment_id', stitchPaymentId)
       }
 
       return new Response(
