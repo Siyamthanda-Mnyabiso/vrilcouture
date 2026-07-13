@@ -87,7 +87,11 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
       )
 
-      // Update order status to paid
+      // Update order status to paid. The `neq('status', 'paid')` guard makes
+      // this the one-time pending→paid transition: Stitch (like most
+      // webhook senders) can redeliver the same event, and without this
+      // guard a redelivery would re-run stock decrement and re-send the
+      // confirmation email below.
       const { data, error } = await supabaseClient
         .from('orders')
         .update({
@@ -96,10 +100,22 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq('stitch_payment_id', stitchPaymentId)
+        .neq('status', 'paid')
         .select()
         .single()
 
       if (error) {
+        // PGRST116 = no row matched the update — either this order was
+        // already marked paid by an earlier delivery of this same event, or
+        // no order has this stitch_payment_id. Either way there's nothing
+        // to do, and it's not a real failure Stitch should retry.
+        if (error.code === 'PGRST116') {
+          console.log(`ℹ️ No pending order for stitch_payment_id ${stitchPaymentId} (already processed or not found)`)
+          return new Response(
+            JSON.stringify({ success: true, message: 'Already processed or order not found' }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
         console.error('❌ Error updating order:', error)
         return new Response(
           JSON.stringify({ error: 'Failed to update order', details: error }),
@@ -109,6 +125,15 @@ serve(async (req) => {
 
       const orderId = data.id
       console.log(`✅ Order ${orderId} updated to paid`)
+
+      const { error: stockError } = await supabaseClient.rpc('decrement_stock_for_order', { p_order_id: orderId })
+      if (stockError) {
+        console.error('❌ Error decrementing stock:', JSON.stringify(stockError))
+        // Don't fail the webhook over this — the order is genuinely paid,
+        // and Stitch shouldn't retry a real payment over an inventory bug.
+      } else {
+        console.log(`📦 Stock decremented for order ${orderId}`)
+      }
 
       // Send the confirmation email as a background task via waitUntil,
       // rather than awaiting it inline. Supabase's Edge Runtime can silently
