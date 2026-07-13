@@ -19,11 +19,13 @@ interface Order {
     items?: OrderItem[];
 }
 
+// A 'pending' order that never got a webhook confirmation is, from the
+// customer's perspective, indistinguishable from one that failed — no money
+// was received either way — so both display as "Not Paid".
 const statusLabels: Record<string, string> = {
-    pending: 'Pending',
+    pending: 'Not Paid',
     paid: 'Paid',
-    processing: 'Processing',
-    shipped: 'Shipped',
+    failed: 'Not Paid',
     fulfilled: 'Fulfilled',
     cancelled: 'Cancelled',
 };
