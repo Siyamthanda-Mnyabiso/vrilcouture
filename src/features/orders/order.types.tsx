@@ -10,7 +10,7 @@ export interface OrderItem {
 export interface Order {
     id: string;
     user_id: string;
-    status: 'pending' | 'paid' | 'fulfilled' | 'cancelled';
+    status: 'pending' | 'paid' | 'failed' | 'fulfilled' | 'cancelled';
     total: number;
     created_at: string;
     updated_at: string;

@@ -1,5 +1,5 @@
 // src/pages/home/Home.tsx
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Hero } from '../../components/hero/Hero';
 import { AnnouncementBar } from '../../components/layout/AnnouncementBar';
@@ -13,10 +13,6 @@ export const Home = () => {
     useEffect(() => {
         fetchProducts();
     }, []);
-
-    const featuredProducts = useMemo(() => {
-        return products;
-    }, [products]);
 
     return (
         <main>

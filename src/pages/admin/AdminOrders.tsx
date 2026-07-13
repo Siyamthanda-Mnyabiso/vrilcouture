@@ -9,11 +9,20 @@ import { formatDateTime } from '../../utils/dates';
 const statusVariant: Record<OrderStatus, 'warning' | 'info' | 'success' | 'error'> = {
     pending: 'warning',
     paid: 'info',
+    failed: 'error',
     fulfilled: 'success',
     cancelled: 'error',
 };
 
-const statusOptions: OrderStatus[] = ['pending', 'paid', 'fulfilled', 'cancelled'];
+const statusLabels: Record<OrderStatus, string> = {
+    pending: 'Pending',
+    paid: 'Paid',
+    failed: 'Not Paid',
+    fulfilled: 'Fulfilled',
+    cancelled: 'Cancelled',
+};
+
+const statusOptions: OrderStatus[] = ['pending', 'paid', 'failed', 'fulfilled', 'cancelled'];
 
 export const AdminOrders = () => {
     const { orders, loading, error, fetchOrders, updateOrderStatus } = useAdminOrders();
@@ -62,7 +71,7 @@ export const AdminOrders = () => {
                             <td className="p-3 text-black">{formatDateTime(order.created_at)}</td>
                             <td className="p-3">
                                 <Badge variant={statusVariant[order.status]} size="sm">
-                                    {order.status}
+                                    {statusLabels[order.status]}
                                 </Badge>
                             </td>
                             <td className="p-3 text-black">{formatCurrency(order.total)}</td>
@@ -77,7 +86,7 @@ export const AdminOrders = () => {
                                 >
                                     {statusOptions.map((s) => (
                                         <option key={s} value={s}>
-                                            {s}
+                                            {statusLabels[s]}
                                         </option>
                                     ))}
                                 </select>

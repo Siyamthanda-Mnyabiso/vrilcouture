@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Order } from '../features/orders/order.types';
 
-export type OrderStatus = 'pending' | 'paid' | 'fulfilled' | 'cancelled';
+export type OrderStatus = 'pending' | 'paid' | 'failed' | 'fulfilled' | 'cancelled';
 
 export function useAdminOrders() {
     const [orders, setOrders] = useState<Order[]>([]);

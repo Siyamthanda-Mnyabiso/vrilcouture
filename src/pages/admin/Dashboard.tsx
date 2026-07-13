@@ -11,8 +11,17 @@ import { formatDateTime } from '../../utils/dates';
 const statusVariant = {
     pending: 'warning',
     paid: 'info',
+    failed: 'error',
     fulfilled: 'success',
     cancelled: 'error',
+} as const;
+
+const statusLabels = {
+    pending: 'Pending',
+    paid: 'Paid',
+    failed: 'Not Paid',
+    fulfilled: 'Fulfilled',
+    cancelled: 'Cancelled',
 } as const;
 
 export const Dashboard = () => {
@@ -100,7 +109,7 @@ export const Dashboard = () => {
                             <td className="p-3 text-black">{formatDateTime(order.created_at)}</td>
                             <td className="p-3">
                                 <Badge variant={statusVariant[order.status]} size="sm">
-                                    {order.status}
+                                    {statusLabels[order.status]}
                                 </Badge>
                             </td>
                             <td className="p-3 text-black">{formatCurrency(order.total)}</td>
