@@ -123,14 +123,19 @@ serve(async (req) => {
         try {
           if (!data.user_id) return
 
-          const { data: userData } = await supabaseClient
+          const { data: userData, error: userError } = await supabaseClient
             .from('users')
             .select('email, full_name')
             .eq('id', data.user_id)
             .single()
 
+          if (userError) {
+            console.error(`❌ users lookup failed for user_id ${data.user_id}:`, JSON.stringify(userError))
+            return
+          }
+
           if (!userData?.email) {
-            console.log(`⚠️ No users row/email for user_id ${data.user_id}, skipping confirmation email`)
+            console.log(`⚠️ users row for ${data.user_id} has no email, skipping confirmation email`)
             return
           }
 
