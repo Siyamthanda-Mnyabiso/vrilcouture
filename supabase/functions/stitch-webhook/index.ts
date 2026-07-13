@@ -110,65 +110,80 @@ serve(async (req) => {
       const orderId = data.id
       console.log(`✅ Order ${orderId} updated to paid`)
 
-      // Fetch user email and send confirmation email
-      try {
-        if (data.user_id) {
+      // Send the confirmation email as a background task via waitUntil,
+      // rather than awaiting it inline. Supabase's Edge Runtime can silently
+      // kill an isolate mid-await ("wall clock shutdown" / "EarlyDrop" — see
+      // https://supabase.com/docs/guides/troubleshooting/edge-functions-worker-timeouts-and-websocket-drops)
+      // with no exception thrown at all, which is exactly what was
+      // swallowing this email send: the order update landed, but nothing
+      // after it — not even the catch block — ever ran or logged.
+      // waitUntil keeps the isolate alive for this specific task without
+      // making Stitch's webhook wait on it.
+      const sendConfirmationEmail = async () => {
+        try {
+          if (!data.user_id) return
+
           const { data: userData } = await supabaseClient
             .from('users')
             .select('email, full_name')
             .eq('id', data.user_id)
             .single()
 
-          if (userData?.email) {
-            // Trigger the confirmation email
-            const { data: itemsData } = await supabaseClient
-              .from('order_items')
-              .select('*')
-              .eq('order_id', orderId)
-
-            const emailPayload = {
-              to: userData.email,
-              customerName: userData.full_name || 'Customer',
-              orderId: orderId,
-              orderTotal: data.total,
-              transactionId: paymentId,
-              items: itemsData?.map(item => ({
-                name: item.product_name,
-                quantity: item.quantity,
-                price: item.price
-              })) || []
-            }
-
-            // Call the send-confirmation-email function
-            const emailResponse = await fetch(
-              `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-confirmation-email`,
-              {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(emailPayload),
-              }
-            )
-
-            if (emailResponse.ok) {
-              console.log(`📧 Confirmation email sent to ${userData.email}`)
-            } else {
-              console.error('❌ Failed to send confirmation email')
-            }
+          if (!userData?.email) {
+            console.log(`⚠️ No users row/email for user_id ${data.user_id}, skipping confirmation email`)
+            return
           }
+
+          const { data: itemsData } = await supabaseClient
+            .from('order_items')
+            .select('*')
+            .eq('order_id', orderId)
+
+          const emailPayload = {
+            to: userData.email,
+            customerName: userData.full_name || 'Customer',
+            orderId: orderId,
+            orderTotal: data.total,
+            transactionId: paymentId,
+            items: itemsData?.map(item => ({
+              name: item.product_name,
+              quantity: item.quantity,
+              price: item.price
+            })) || []
+          }
+
+          // Call the send-confirmation-email function
+          const emailResponse = await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-confirmation-email`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(emailPayload),
+            }
+          )
+
+          if (emailResponse.ok) {
+            console.log(`📧 Confirmation email sent to ${userData.email}`)
+          } else {
+            console.error('❌ Failed to send confirmation email:', await emailResponse.text())
+          }
+        } catch (emailError) {
+          console.error('❌ Error sending confirmation email:', emailError)
+          // Don't fail the webhook if email fails
         }
-      } catch (emailError) {
-        console.error('❌ Error sending confirmation email:', emailError)
-        // Don't fail the webhook if email fails
       }
 
+      // @ts-ignore -- EdgeRuntime is a Supabase/Deno Deploy global, not in lib.deno.d.ts
+      EdgeRuntime.waitUntil(sendConfirmationEmail())
+
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           message: 'Order updated to paid',
-          orderId 
+          orderId
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -206,7 +221,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Webhook error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error', message: error.message }),
+      JSON.stringify({ error: 'Internal server error', message: error instanceof Error ? error.message : String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
