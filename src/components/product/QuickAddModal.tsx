@@ -1,7 +1,8 @@
 // src/components/product/QuickAddModal.tsx
+
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Minus, Plus, ImageOff } from 'lucide-react';
+import { Minus, Plus, ImageOff, Heart } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { useCart } from '../../hooks/useCart';
 import { useProductVariants } from '../../hooks/useProductVariants';
@@ -13,6 +14,46 @@ interface QuickAddModalProps {
     onClose: () => void;
 }
 
+// Lightweight color-name -> swatch mapping for common fashion colors.
+// Extend this as needed, or replace with a real hex value coming from your
+// variant data if/when the backend starts returning one.
+const COLOR_SWATCH_MAP: Record<string, string> = {
+    black: '#111111',
+    white: '#f5f5f0',
+    ivory: '#f4ecdf',
+    cream: '#f2e8d5',
+    beige: '#d9c7a8',
+    nude: '#e0b8a0',
+    tan: '#c9a37a',
+    brown: '#6b4a34',
+    camel: '#b98c5a',
+    navy: '#1b2a4a',
+    blue: '#3a5f8a',
+    denim: '#4a6b8a',
+    grey: '#8a8a8a',
+    gray: '#8a8a8a',
+    charcoal: '#3a3a3a',
+    red: '#a3242c',
+    burgundy: '#5e1f2e',
+    maroon: '#5e1f2e',
+    pink: '#e6b8c2',
+    rose: '#c98a97',
+    blush: '#e8c9cf',
+    green: '#4a5e42',
+    olive: '#5c5a3a',
+    khaki: '#8a8460',
+    yellow: '#e0c14a',
+    mustard: '#c9a227',
+    orange: '#d17a3a',
+    purple: '#5c4a6e',
+    lilac: '#c3b3d9',
+};
+
+function getSwatchColor(colorName: string): string {
+    const key = colorName.trim().toLowerCase();
+    return COLOR_SWATCH_MAP[key] ?? '#bdbdbd';
+}
+
 export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) {
     const { addToCart } = useCart();
     const { variants, loading: variantsLoading, fetchVariants } = useProductVariants();
@@ -21,6 +62,10 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
     const [justAdded, setJustAdded] = useState(false);
+
+    // Purely visual for now — wire this up to your real wishlist hook when
+    // one exists (e.g. useWishlist()).
+    const [wishlisted, setWishlisted] = useState(false);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -96,15 +141,15 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                     )}
                 </div>
 
-                <div className="flex-1 flex flex-col gap-6">
+                <div className="flex-1 flex flex-col gap-5">
                     <div>
-                        <p className="text-xs uppercase tracking-[0.3em] text-black/40 mb-2">
+                        <p className="text-xs uppercase tracking-[0.25em] text-black/40 mb-2">
                             {product.brand || 'Vril Couture'}
                         </p>
-                        <h3 className="text-2xl font-medium uppercase tracking-tight text-black">
+                        <h3 className="font-serif text-2xl leading-snug text-black">
                             {product.name}
                         </h3>
-                        <p className="text-xl font-semibold text-black mt-2">
+                        <p className="font-serif text-lg text-black/70 mt-1">
                             R{product.price.toFixed(2)}
                         </p>
                     </div>
@@ -113,10 +158,48 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                         <p className="text-xs text-black/40 uppercase tracking-wide">Loading options...</p>
                     ) : hasVariants ? (
                         <div className="flex flex-col gap-5">
+                            {colors.length > 0 && (
+                                <div>
+                                    <p className="text-sm font-medium text-black mb-3">Color</p>
+                                    <div className="flex flex-wrap gap-3">
+                                        {colors.map((color) => {
+                                            const isSelected = selectedColor === color;
+                                            const disabled = !!selectedSize && !isColorAvailableForSize(selectedSize, color);
+                                            return (
+                                                <button
+                                                    key={color}
+                                                    type="button"
+                                                    title={color}
+                                                    onClick={() => { setSelectedColor(color); setQuantity(1); }}
+                                                    disabled={disabled}
+                                                    className={`relative w-8 h-8 rounded-full transition-all ${
+                                                        isSelected
+                                                            ? 'ring-2 ring-black ring-offset-2'
+                                                            : 'ring-1 ring-black/15 ring-offset-2 hover:ring-black/40'
+                                                    } ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                    style={{ backgroundColor: getSwatchColor(color) }}
+                                                >
+                                                    <span className="sr-only">{color}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
                             <div>
-                                <p className="text-xs uppercase tracking-[0.25em] text-black/40 mb-3">
-                                    Size
-                                </p>
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-sm font-medium text-black">Size</p>
+                                    <button
+                                        type="button"
+                                        className="text-xs text-black/40 hover:text-black transition-colors"
+                                        onClick={() => {
+                                            // TODO: wire up to a real size guide modal/route
+                                        }}
+                                    >
+                                        Size Guide
+                                    </button>
+                                </div>
                                 <div className="flex flex-wrap gap-2.5">
                                     {sizes.map((size) => {
                                         const isSelected = selectedSize === size;
@@ -127,40 +210,13 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                                                 type="button"
                                                 onClick={() => { setSelectedSize(size); setQuantity(1); }}
                                                 disabled={!sizeHasAnyStock}
-                                                className={`min-w-[44px] h-11 px-4 text-sm uppercase tracking-wide rounded-full border transition-colors ${
+                                                className={`w-10 h-10 flex items-center justify-center rounded-full border text-sm transition-colors ${
                                                     isSelected
-                                                        ? 'border-black bg-black text-white'
+                                                        ? 'border-black border-2 text-black'
                                                         : 'border-black/20 text-black hover:border-black'
-                                                } ${!sizeHasAnyStock ? 'opacity-30 cursor-not-allowed line-through hover:border-black/20' : ''}`}
+                                                } ${!sizeHasAnyStock ? 'opacity-30 cursor-not-allowed hover:border-black/20' : ''}`}
                                             >
                                                 {size}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            <div>
-                                <p className="text-xs uppercase tracking-[0.25em] text-black/40 mb-3">
-                                    Color
-                                </p>
-                                <div className="flex flex-wrap gap-2.5">
-                                    {colors.map((color) => {
-                                        const isSelected = selectedColor === color;
-                                        const disabled = !selectedSize || !isColorAvailableForSize(selectedSize, color);
-                                        return (
-                                            <button
-                                                key={color}
-                                                type="button"
-                                                onClick={() => { setSelectedColor(color); setQuantity(1); }}
-                                                disabled={disabled}
-                                                className={`h-11 px-4 text-sm uppercase tracking-wide rounded-full border transition-colors ${
-                                                    isSelected
-                                                        ? 'border-black bg-black text-white'
-                                                        : 'border-black/20 text-black hover:border-black'
-                                                } ${disabled ? 'opacity-30 cursor-not-allowed hover:border-black/20' : ''}`}
-                                            >
-                                                {color}
                                             </button>
                                         );
                                     })}
@@ -173,28 +229,28 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                         </div>
                     ) : null}
 
-                    <div className="flex items-center gap-4 mt-auto">
-                        <div className="flex items-center border border-black/20 h-12 shrink-0">
+                    <div className="flex items-center gap-3 mt-auto">
+                        <div className="flex items-center border border-black/20 rounded-full h-11 shrink-0">
                             <button
                                 type="button"
                                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                                 disabled={quantity <= 1}
-                                className="w-10 h-full flex items-center justify-center text-black hover:bg-black/5 disabled:opacity-30 transition-colors"
+                                className="w-9 h-full flex items-center justify-center text-black hover:bg-black/5 disabled:opacity-30 transition-colors rounded-l-full"
                                 aria-label="Decrease quantity"
                             >
-                                <Minus className="w-4 h-4" />
+                                <Minus className="w-3.5 h-3.5" />
                             </button>
-                            <span className="w-10 text-center text-sm font-medium text-black">
+                            <span className="w-8 text-center text-sm font-medium text-black">
                                 {quantity}
                             </span>
                             <button
                                 type="button"
                                 onClick={() => setQuantity((q) => Math.min(maxQuantity || 1, q + 1))}
                                 disabled={maxQuantity > 0 && quantity >= maxQuantity}
-                                className="w-10 h-full flex items-center justify-center text-black hover:bg-black/5 disabled:opacity-30 transition-colors"
+                                className="w-9 h-full flex items-center justify-center text-black hover:bg-black/5 disabled:opacity-30 transition-colors rounded-r-full"
                                 aria-label="Increase quantity"
                             >
-                                <Plus className="w-4 h-4" />
+                                <Plus className="w-3.5 h-3.5" />
                             </button>
                         </div>
 
@@ -202,7 +258,7 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                             type="button"
                             onClick={handleAddToCart}
                             disabled={!canAddToCart}
-                            className="flex-1 h-12 bg-black text-white text-xs uppercase tracking-[0.3em] hover:bg-black/85 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-black"
+                            className="flex-1 h-11 rounded-full bg-black text-white text-xs uppercase tracking-[0.25em] hover:bg-black/85 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-black"
                         >
                             {justAdded
                                 ? 'Added To Cart'
@@ -212,14 +268,27 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                                         ? 'Select Size & Color'
                                         : 'Out Of Stock'}
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setWishlisted((w) => !w)}
+                            aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                            className="w-11 h-11 shrink-0 rounded-full border border-black/20 flex items-center justify-center hover:border-black transition-colors"
+                        >
+                            <Heart
+                                className={`w-4 h-4 transition-colors ${
+                                    wishlisted ? 'fill-black text-black' : 'text-black/60'
+                                }`}
+                            />
+                        </button>
                     </div>
 
                     <Link
                         to={`/product/${product.id}`}
                         onClick={onClose}
-                        className="text-xs uppercase tracking-[0.25em] text-black/50 hover:text-black transition-colors"
+                        className="text-xs text-black/50 hover:text-black transition-colors"
                     >
-                        View Full Details
+                        View product details
                     </Link>
                 </div>
             </div>
