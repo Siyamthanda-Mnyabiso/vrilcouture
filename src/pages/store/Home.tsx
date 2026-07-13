@@ -7,7 +7,6 @@ import { ProductGrid } from '../../components/product/ProductGrid';
 import { CategoryBanner } from '../../components/category/CategoryBanner';
 import { useProducts } from '../../hooks/useProducts';
 
-
 export const Home = () => {
     const { products, loading: productsLoading, fetchProducts } = useProducts();
 
@@ -26,15 +25,13 @@ export const Home = () => {
 
             <AnnouncementBar />
 
-            {/* NEW: second product grid right after the announcement bar */}
             <ProductGrid
                 title="New Arrivals"
-                products={featuredProducts}
+                products={products}
                 loading={productsLoading}
                 viewAllHref="/shop"
             />
 
-            {/* NEW: full-width editorial category banner */}
             <CategoryBanner
                 categoryName="Obsidian Series"
                 categorySlug="obsidian-series"
@@ -42,7 +39,6 @@ export const Home = () => {
                 imageUrl="/categories/1.jpeg"
             />
 
-            {/* NEW: ambient brand film */}
             <section className="relative w-full h-[70vh] md:h-[85vh] overflow-hidden bg-black">
                 <video
                     src="https://cdn.cosmos.so/83febc38-6f69-4265-8d11-75b379937b4e.mp4"
@@ -56,21 +52,12 @@ export const Home = () => {
                 <div className="absolute inset-0 bg-black/30" />
 
                 <div className="relative h-full flex items-center justify-center px-6">
-                    <h2 className="
-            font-display
-            text-white
-            text-4xl md:text-7xl
-            uppercase
-            tracking-tight
-            text-center
-            leading-[0.9]
-        ">
+                    <h2 className="font-display text-white text-4xl md:text-7xl uppercase tracking-tight text-center leading-[0.9]">
                         Vril
                     </h2>
                 </div>
             </section>
 
-            {/* NEW: centered CTA block */}
             <section className="py-20 px-8 md:px-12 text-center bg-white border-t border-black">
                 <h2 className="font-display text-3xl md:text-5xl uppercase tracking-tight mb-4 text-black">
                     Enter The Drop
@@ -89,7 +76,6 @@ export const Home = () => {
                 </Link>
             </section>
 
-            {/* your existing Featured / Catalog / video / brand sections continue below, unchanged */}
         </main>
     );
 };
