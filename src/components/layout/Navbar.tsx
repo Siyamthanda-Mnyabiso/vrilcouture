@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, ShoppingBag, Menu, ChevronDown, X, ImageOff } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { useCategories } from '../../hooks/useCategories';
+import { useProducts } from '../../hooks/useProducts';
 import { useSearch } from '../../hooks/useSearch';
 import { AccountDropdown } from './AccountDropdown';
 import { MobileNav } from './MobileNav';
@@ -53,6 +54,7 @@ export function Navbar() {
     const { itemCount } = useCart();
 
     const { categories, fetchCategories } = useCategories();
+    const { products: megaMenuProducts, fetchProducts: fetchMegaMenuProducts } = useProducts();
 
     const navigate = useNavigate();
 
@@ -75,6 +77,7 @@ export function Navbar() {
 
     useEffect(() => {
         fetchCategories();
+        fetchMegaMenuProducts({ sortBy: 'newest', limit: 2 });
     }, []);
 
     useEffect(() => {
@@ -234,7 +237,7 @@ export function Navbar() {
 
                                 <div
                                     className="
-                                w-[1000px]
+                                w-[1120px]
                                 rounded-3xl
                                 bg-white
                                 border
@@ -245,10 +248,16 @@ export function Navbar() {
 
 
                                     <div className="
-                                    grid
-                                    grid-cols-4
-                                    gap-10
+                                    flex
+                                    gap-12
                                     p-12
+                                    ">
+
+                                    <div className="
+                                    grid
+                                    grid-cols-5
+                                    gap-8
+                                    flex-1
                                     ">
 
 
@@ -356,6 +365,79 @@ export function Navbar() {
                                         </div>
 
 
+                                    </div>
+
+                                    {/* NEW IN — real product imagery, Cotton On mega-menu style */}
+                                    <div className="
+                                    flex
+                                    gap-4
+                                    w-[340px]
+                                    shrink-0
+                                    ">
+
+                                        {megaMenuProducts.slice(0, 2).map(product => (
+
+                                            <Link
+                                                key={product.id}
+                                                to={`/product/${product.id}`}
+                                                onClick={() => setShopOpen(false)}
+                                                className="
+                                                relative
+                                                flex-1
+                                                aspect-[3/4]
+                                                bg-gray-100
+                                                overflow-hidden
+                                                group
+                                                "
+                                            >
+
+                                                {product.image_url ? (
+                                                    <img
+                                                        src={product.image_url}
+                                                        alt={product.name}
+                                                        className="
+                                                        w-full
+                                                        h-full
+                                                        object-cover
+                                                        transition-transform
+                                                        duration-500
+                                                        group-hover:scale-105
+                                                        "
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full items-center justify-center">
+                                                        <ImageOff className="w-8 h-8 text-gray-400" />
+                                                    </div>
+                                                )}
+
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-transparent" />
+
+                                                <span className="
+                                                absolute
+                                                top-3
+                                                left-3
+                                                text-white
+                                                text-[10px]
+                                                uppercase
+                                                tracking-[0.3em]
+                                                ">
+                                                    New In
+                                                </span>
+
+                                                <div className="absolute bottom-0 left-0 right-0 p-4">
+                                                    <p className="text-white text-xs uppercase tracking-[0.15em] truncate">
+                                                        {product.name}
+                                                    </p>
+                                                    <p className="text-white/80 text-xs mt-1">
+                                                        R{product.price}
+                                                    </p>
+                                                </div>
+
+                                            </Link>
+
+                                        ))}
+
+                                    </div>
 
                                     </div>
 

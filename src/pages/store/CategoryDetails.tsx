@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useCategories } from '../../hooks/useCategories';
 import { useProducts } from '../../hooks/useProducts';
+import { ProductGrid } from '../../components/product/ProductGrid';
 import type { Category } from '../../types/category';
 
 export const CategoryDetails = () => {
@@ -259,107 +260,7 @@ export const CategoryDetails = () => {
 
 
 
-                        <div className="
-                        grid
-                        grid-cols-2
-                        md:grid-cols-3
-                        lg:grid-cols-4
-                        gap-6
-                        ">
-
-
-                            {products.map((product)=> (
-
-
-                                <Link
-
-                                    key={product.id}
-
-                                    to={`/product/${product.id}`}
-
-                                    className="group"
-
-                                >
-
-
-                                    <div className="
-                                    aspect-square
-                                    bg-black/5
-                                    overflow-hidden
-                                    "
-                                    >
-
-
-                                        {product.image_url ? (
-
-                                            <img
-
-                                                src={product.image_url}
-
-                                                alt={product.name}
-
-                                                className="
-                                            w-full
-                                            h-full
-                                            object-cover
-                                            group-hover:scale-105
-                                            transition
-                                            duration-700
-                                            "
-
-                                            />
-
-                                        ) : (
-
-                                            <div className="
-                                            w-full
-                                            h-full
-                                            flex
-                                            items-center
-                                            justify-center
-                                            text-black/30
-                                            "
-                                            >
-                                                No Image
-                                            </div>
-
-                                        )}
-
-
-                                    </div>
-
-
-
-
-                                    <h3 className="
-                                    mt-3
-                                    font-medium
-                                    "
-                                    >
-
-                                        {product.name}
-
-                                    </h3>
-
-
-                                    <p className="
-                                    text-black/50
-                                    "
-                                    >
-
-                                        R{product.price.toFixed(2)}
-
-                                    </p>
-
-
-
-                                </Link>
-
-
-                            ))}
-
-
-                        </div>
+                        <ProductGrid products={products} />
 
                     </>
 
