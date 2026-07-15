@@ -9,6 +9,8 @@ import { Checkout } from '../pages/store/Checkout';
 import { OrderSuccess } from '../pages/store/OrderSuccess';
 import { About } from '../pages/store/About';
 import { Contact } from '../pages/store/Contact';
+import { Terms } from '../pages/store/Terms';
+import { ReturnPolicy } from '../pages/store/ReturnPolicy';
 
 export const storeRoutes: RouteObject[] = [
     {
@@ -26,6 +28,14 @@ export const storeRoutes: RouteObject[] = [
     {
         path: 'contact',
         element: <Contact />,
+    },
+    {
+        path: 'terms',
+        element: <Terms />,
+    },
+    {
+        path: 'returns',
+        element: <ReturnPolicy />,
     },
     {
         path: 'product/:slug',

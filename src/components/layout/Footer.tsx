@@ -25,7 +25,7 @@ const FEATURES = [
         icon: RotateCcw,
         title: 'Easy Return',
         description:
-            'Enjoy easy returns within 30 days of purchase. Use our prepaid label or visit any store for a quick refund or exchange.',
+            'Request a return within 14 days of delivery. Exchanges are subject to stock availability for a smooth refund or swap.',
     },
 ];
 
@@ -179,8 +179,8 @@ export const Footer = () => {
 
                     <div className="flex gap-8 text-xs tracking-[0.3em] uppercase text-white/30">
                         <Link to="#" className="hover:text-white">Instagram</Link>
-                        <Link to="#" className="hover:text-white">Terms</Link>
-                        <Link to="#" className="hover:text-white">Privacy</Link>
+                        <Link to="/terms" className="hover:text-white">Terms</Link>
+                        <Link to="/returns" className="hover:text-white">Returns</Link>
                     </div>
 
                 </div>
