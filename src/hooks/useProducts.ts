@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { syncProductToMerchant, deleteMerchantListing } from '../lib/googleMerchantSync';
 import type {
     Product,
     CreateProductInput,
@@ -96,6 +97,7 @@ export function useProducts() {
 
         if (insertError) throw insertError;
         setProducts((prev) => [data, ...prev]);
+        syncProductToMerchant(data.id);
         return data as Product;
     };
 
@@ -110,13 +112,24 @@ export function useProducts() {
         if (updateError) throw updateError;
         setProducts((prev) => prev.map((p) => (p.id === id ? data : p)));
         if (currentProduct?.id === id) setCurrentProduct({ ...currentProduct, ...data });
+        syncProductToMerchant(id);
         return data as Product;
     };
 
     const deleteProduct = async (id: string) => {
+        // Capture the offer id(s) this product maps to in Merchant Center
+        // *before* deleting — once the row (and its variants, via FK cascade)
+        // is gone, there's nothing left to look up.
+        const { data: variants } = await supabase
+            .from('product_variants')
+            .select('id')
+            .eq('product_id', id);
+        const offerIds = variants && variants.length > 0 ? variants.map((v) => v.id) : [id];
+
         const { error: deleteError } = await supabase.from('products').delete().eq('id', id);
         if (deleteError) throw deleteError;
         setProducts((prev) => prev.filter((p) => p.id !== id));
+        deleteMerchantListing(offerIds);
     };
 
     const addProductMedia = async (

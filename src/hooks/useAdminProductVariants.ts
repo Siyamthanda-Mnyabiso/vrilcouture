@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { syncProductToMerchant, deleteMerchantListing } from '../lib/googleMerchantSync';
 
 export interface ProductVariant {
     id: string;
@@ -64,6 +65,7 @@ export function useAdminProductVariants() {
         if (error) throw error;
 
         setVariants(prev => [...prev, data]);
+        syncProductToMerchant(productId);
 
         return data;
     };
@@ -88,6 +90,9 @@ export function useAdminProductVariants() {
                     : v
             )
         );
+
+        const productId = variants.find(v => v.id === id)?.product_id;
+        if (productId) syncProductToMerchant(productId);
     };
 
 
@@ -103,6 +108,7 @@ export function useAdminProductVariants() {
         setVariants(prev =>
             prev.filter(v => v.id !== id)
         );
+        deleteMerchantListing(id);
     };
 
 

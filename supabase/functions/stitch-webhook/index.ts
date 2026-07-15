@@ -133,6 +133,56 @@ serve(async (req) => {
         // and Stitch shouldn't retry a real payment over an inventory bug.
       } else {
         console.log(`📦 Stock decremented for order ${orderId}`)
+
+        // decrement_stock_for_order writes straight to products/product_variants
+        // via RPC, bypassing the useProducts/useAdminProductVariants hooks that
+        // normally trigger a Google Merchant sync on every stock change — so
+        // this is the one write path that has to push to Merchant itself.
+        // Background task via waitUntil for the same reason as the
+        // confirmation email below: don't make Stitch's webhook wait on it,
+        // and a plain un-awaited fetch can get killed mid-flight once the
+        // response is sent.
+        const syncStockToMerchant = async () => {
+          try {
+            const { data: items, error: itemsError } = await supabaseClient
+              .from('order_items')
+              .select('product_id')
+              .eq('order_id', orderId)
+
+            if (itemsError) {
+              console.error('❌ Error loading order_items for Merchant sync:', JSON.stringify(itemsError))
+              return
+            }
+
+            const productIds = [...new Set((items ?? []).map((i) => i.product_id).filter(Boolean))]
+            if (productIds.length === 0) return
+
+            const syncResponse = await fetch(
+              `${Deno.env.get('SUPABASE_URL')}/functions/v1/google-merchant-sync`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ action: 'upsert_many', productIds }),
+              }
+            )
+
+            if (syncResponse.ok) {
+              console.log(`🔄 Merchant sync triggered for ${productIds.length} product(s) from order ${orderId}`)
+            } else {
+              console.error('❌ Merchant sync request failed:', await syncResponse.text())
+            }
+          } catch (syncError) {
+            console.error('❌ Error triggering Merchant sync:', syncError)
+            // Don't fail the webhook if Merchant sync fails — the order and
+            // stock decrement are already committed.
+          }
+        }
+
+        // @ts-expect-error -- EdgeRuntime is a Supabase/Deno Deploy global, not in lib.deno.d.ts
+        EdgeRuntime.waitUntil(syncStockToMerchant())
       }
 
       // Send the confirmation email as a background task via waitUntil,
