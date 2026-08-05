@@ -14,7 +14,7 @@ export function Hero() {
                 style={{ transform: `translate3d(0, ${offset}px, 0)` }}
             >
                 <source
-                    src="https://cdn.cosmos.so/a1307d2a-dfb6-415a-9738-9768e4a2dc95.mp4"
+                    src="https://stream.mux.com/AuTOGe1xpr0102MaHp1abrgj1jwJ01bojNouGXGdtOzTLM/high.mp4"
                     type="video/mp4"
                 />
             </video>
