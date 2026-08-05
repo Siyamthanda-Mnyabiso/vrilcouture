@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface ProductGalleryProps {
     images: string[];
@@ -14,10 +14,12 @@ export const ProductGallery = ({
     const [mainImage, setMainImage] = useState(images[0] || '');
     const [isZoomed, setIsZoomed] = useState(false);
 
-    useEffect(() => {
-        // Reset to first image when images array changes
+    // Reset to first image when images array changes
+    const [prevImages, setPrevImages] = useState(images);
+    if (images !== prevImages) {
+        setPrevImages(images);
         setMainImage(images[0] || '');
-    }, [images]);
+    }
 
     const placeholderImage = 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=800&h=1000&fit=crop';
 

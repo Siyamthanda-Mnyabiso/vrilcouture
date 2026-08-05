@@ -1,6 +1,6 @@
 // src/pages/store/CategoryDetails.tsx
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useCategories } from '../../hooks/useCategories';
 import { useProducts } from '../../hooks/useProducts';
@@ -11,47 +11,26 @@ export const CategoryDetails = () => {
 
     const { slug } = useParams<{ slug: string }>();
 
-    const [category, setCategory] = useState<Category | null>(null);
-    const [categoryChecked, setCategoryChecked] = useState(false);
-
     const { categories, loading: categoriesLoading, fetchCategories } = useCategories();
 
     const { products, fetchProducts, loading: productsLoading } = useProducts();
-
-
 
     useEffect(() => {
         fetchCategories();
     }, []);
 
-
-
+    const categoryChecked = !!slug && !categoriesLoading;
+    const category: Category | null = categoryChecked
+        ? categories.find((c) => c.slug === slug) ?? null
+        : null;
 
     useEffect(() => {
-
-        if (!slug || categoriesLoading) return;
-
-
-        const categoryData = categories.find(
-            (c) => c.slug === slug
-        ) ?? null;
-
-
-        setCategory(categoryData);
-        setCategoryChecked(true);
-
-
-
-        if(categoryData){
-
+        if (category) {
             fetchProducts({
-                category: categoryData.id
+                category: category.id
             });
-
         }
-
-
-    }, [slug, categories, categoriesLoading]);
+    }, [category]);
 
 
 

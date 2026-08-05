@@ -67,13 +67,22 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
     // one exists (e.g. useWishlist()).
     const [wishlisted, setWishlisted] = useState(false);
 
+    // Reset selections whenever the modal is (re)opened for a product.
+    const resetKey = isOpen ? product.id : null;
+    const [prevResetKey, setPrevResetKey] = useState(resetKey);
+    if (resetKey !== prevResetKey) {
+        setPrevResetKey(resetKey);
+        if (resetKey !== null) {
+            setSelectedSize(null);
+            setSelectedColor(null);
+            setQuantity(1);
+            setJustAdded(false);
+        }
+    }
+
     useEffect(() => {
         if (!isOpen) return;
         fetchVariants(product.id);
-        setSelectedSize(null);
-        setSelectedColor(null);
-        setQuantity(1);
-        setJustAdded(false);
     }, [isOpen, product.id]);
 
     const sizes = useMemo(() => Array.from(new Set(variants.map((v) => v.size))), [variants]);

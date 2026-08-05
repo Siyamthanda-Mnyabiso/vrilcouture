@@ -26,7 +26,6 @@ export const OrderSuccess = () => {
     const { clearCart } = useCart();
 
     const [pageState, setPageState] = useState<PageState>('loading');
-    const [cartCleared, setCartCleared] = useState(false);
 
     useEffect(() => {
         if (!orderId) {
@@ -86,7 +85,6 @@ export const OrderSuccess = () => {
             clearCart();
             sessionStorage.setItem(cartClearedKey, 'true');
         }
-        setCartCleared(true);
     }, [pageState, orderId, clearCart]);
 
     if (pageState === 'loading') {
@@ -217,14 +215,12 @@ export const OrderSuccess = () => {
                         </p>
                     )}
 
-                    {cartCleared && (
-                        <div className="mb-4 p-3 bg-white border border-black flex items-center gap-2">
-                            <svg className="h-4 w-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                            <p className="text-black text-sm">Your cart has been cleared</p>
-                        </div>
-                    )}
+                    <div className="mb-4 p-3 bg-white border border-black flex items-center gap-2">
+                        <svg className="h-4 w-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <p className="text-black text-sm">Your cart has been cleared</p>
+                    </div>
 
                     <p className="text-black/50 mb-8">
                         You will receive a confirmation email shortly with your order details.

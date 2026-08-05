@@ -26,9 +26,15 @@ export const ProductDetails = () => {
 
     useEffect(() => {
         if (product?.id) fetchVariants(product.id);
+    }, [product?.id]);
+
+    // Reset the selected media/quantity whenever the product changes.
+    const [prevProductId, setPrevProductId] = useState(product?.id);
+    if (product?.id !== prevProductId) {
+        setPrevProductId(product?.id);
         setActiveMediaIndex(0);
         setQuantity(1);
-    }, [product?.id]);
+    }
 
     useEffect(() => {
         if (product?.category_id) {

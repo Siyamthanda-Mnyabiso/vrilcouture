@@ -2,20 +2,25 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 export function SplashScreen() {
-    const [visible, setVisible] = useState(false);
     const [reveal, setReveal] = useState(false);
     const [fadeOut, setFadeOut] = useState(false);
+    const [removed, setRemoved] = useState(false);
     const location = useLocation();
+    const isHome = location.pathname === '/';
+
+    // Reset the animation whenever we (re)land on the home route.
+    const [prevIsHome, setPrevIsHome] = useState(isHome);
+    if (isHome !== prevIsHome) {
+        setPrevIsHome(isHome);
+        if (isHome) {
+            setReveal(false);
+            setFadeOut(false);
+            setRemoved(false);
+        }
+    }
 
     useEffect(() => {
-        if (location.pathname !== '/') {
-            setVisible(false);
-            return;
-        }
-
-        setVisible(true);
-        setReveal(false);
-        setFadeOut(false);
+        if (!isHome) return;
 
         // slight delay before reveal (creates anticipation)
         const revealTimer = setTimeout(() => setReveal(true), 250);
@@ -24,16 +29,16 @@ export function SplashScreen() {
         const holdTimer = setTimeout(() => setFadeOut(true), 1800);
 
         // remove screen
-        const removeTimer = setTimeout(() => setVisible(false), 2200);
+        const removeTimer = setTimeout(() => setRemoved(true), 2200);
 
         return () => {
             clearTimeout(revealTimer);
             clearTimeout(holdTimer);
             clearTimeout(removeTimer);
         };
-    }, [location.pathname]);
+    }, [isHome]);
 
-    if (!visible) return null;
+    if (!isHome || removed) return null;
 
     return (
         <div className={`

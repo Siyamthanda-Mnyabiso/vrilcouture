@@ -67,19 +67,20 @@ export const AdminProductForm = () => {
         if (isEditing && id) fetchVariants(id);
     }, [id, isEditing]);
 
-    useEffect(() => {
-        if (isEditing && currentProduct) {
-            setName(currentProduct.name);
-            setDescription(currentProduct.description ?? '');
-            setPrice(String(currentProduct.price));
-            setOriginalPrice(currentProduct.original_price ? String(currentProduct.original_price) : '');
-            setSku(currentProduct.sku ?? '');
-            setBrand(currentProduct.brand ?? '');
-            setStock(String(currentProduct.stock));
-            setCategoryId(currentProduct.category_id ?? '');
-            setExistingMedia(currentProduct.media ?? []);
-        }
-    }, [currentProduct, isEditing]);
+    // Populate the form once the product being edited has loaded.
+    const [loadedProductId, setLoadedProductId] = useState<string | undefined>(undefined);
+    if (isEditing && currentProduct && currentProduct.id !== loadedProductId) {
+        setLoadedProductId(currentProduct.id);
+        setName(currentProduct.name);
+        setDescription(currentProduct.description ?? '');
+        setPrice(String(currentProduct.price));
+        setOriginalPrice(currentProduct.original_price ? String(currentProduct.original_price) : '');
+        setSku(currentProduct.sku ?? '');
+        setBrand(currentProduct.brand ?? '');
+        setStock(String(currentProduct.stock));
+        setCategoryId(currentProduct.category_id ?? '');
+        setExistingMedia(currentProduct.media ?? []);
+    }
 
     const handleFilesSelected = (files: FileList | null) => {
         if (!files) return;
