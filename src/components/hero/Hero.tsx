@@ -1,12 +1,17 @@
+import { useParallax } from '../../hooks/useParallax';
+
 export function Hero() {
+    const { ref, offset } = useParallax<HTMLElement>(0.2);
+
     return (
-        <section className="relative h-screen bg-black overflow-hidden">
+        <section ref={ref} className="relative h-screen bg-black overflow-hidden">
             <video
                 autoPlay
                 muted
                 loop
                 playsInline
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute -inset-y-[30%] inset-x-0 w-full h-[160%] object-cover will-change-transform"
+                style={{ transform: `translate3d(0, ${offset}px, 0)` }}
             >
                 <source
                     src="https://cdn.cosmos.so/a1307d2a-dfb6-415a-9738-9768e4a2dc95.mp4"

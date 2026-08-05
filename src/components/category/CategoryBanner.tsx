@@ -1,5 +1,5 @@
 // src/components/category/CategoryBanner.tsx
-
+import { useParallax } from '../../hooks/useParallax';
 
 interface CategoryBannerProps {
     categoryName: string;
@@ -9,12 +9,15 @@ interface CategoryBannerProps {
 }
 
 export function CategoryBanner({ categoryName, description, imageUrl }: CategoryBannerProps) {
+    const { ref, offset } = useParallax<HTMLElement>(0.2);
+
     return (
-        <section className="relative w-full h-[60vh] md:h-[70vh] overflow-hidden bg-black">
+        <section ref={ref} className="relative w-full h-[60vh] md:h-[70vh] overflow-hidden bg-black">
             <img
                 src={imageUrl}
                 alt={categoryName}
-                className="absolute inset-0 w-full h-full object-cover opacity-80"
+                className="absolute -inset-y-[30%] inset-x-0 w-full h-[160%] object-cover opacity-80 will-change-transform"
+                style={{ transform: `translate3d(0, ${offset}px, 0)` }}
             />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
