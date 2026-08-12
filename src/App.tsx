@@ -4,7 +4,6 @@ import { Footer } from './components/layout/Footer';
 import { SplashScreen } from './components/layout/SplashScreen';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import {TopAnnouncementBar} from "./components/layout/TopAnnouncementBar.tsx";
-import { Analytics } from '@vercel/analytics/react';
 
 
 export const App = () => {
@@ -20,7 +19,6 @@ export const App = () => {
             </main>
 
             <Footer />
-            <Analytics />
         </div>
     );
 };
