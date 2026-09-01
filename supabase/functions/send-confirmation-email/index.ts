@@ -20,6 +20,9 @@ interface EmailRequest {
     price: number
   }>
   transactionId?: string
+  // 'customer' (default) uses SENDGRID_TEMPLATE_ID; 'admin' uses
+  // SENDGRID_ADMIN_TEMPLATE_ID, a separate store-facing "new order" template.
+  emailType?: 'customer' | 'admin'
 }
 
 serve(async (req) => {
@@ -103,36 +106,38 @@ serve(async (req) => {
     const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY')
     const FROM_EMAIL = Deno.env.get('SENDGRID_FROM_EMAIL') || 'noreply@vrilcouture.co.za'
     const FROM_NAME = Deno.env.get('SENDGRID_FROM_NAME') || 'Vril Couture Collection'
-    const TEMPLATE_ID = Deno.env.get('SENDGRID_TEMPLATE_ID')
+    const emailType = body.emailType === 'admin' ? 'admin' : 'customer'
+    const TEMPLATE_ID_VAR = emailType === 'admin' ? 'SENDGRID_ADMIN_TEMPLATE_ID' : 'SENDGRID_TEMPLATE_ID'
+    const TEMPLATE_ID = Deno.env.get(TEMPLATE_ID_VAR)
 
     console.log('📧 Environment check:');
     console.log('  SENDGRID_API_KEY:', SENDGRID_API_KEY ? '✅ Set' : '❌ Missing');
-    console.log('  TEMPLATE_ID:', TEMPLATE_ID ? '✅ Set' : '❌ Missing');
+    console.log(`  ${TEMPLATE_ID_VAR}:`, TEMPLATE_ID ? '✅ Set' : '❌ Missing');
     console.log('  FROM_EMAIL:', FROM_EMAIL);
 
     if (!SENDGRID_API_KEY) {
       console.error('❌ SENDGRID_API_KEY not configured');
       return new Response(
         JSON.stringify({ error: 'Email service not configured - missing API key' }),
-        { 
-          status: 500, 
+        {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
     if (!TEMPLATE_ID) {
-      console.error('❌ SENDGRID_TEMPLATE_ID not configured');
+      console.error(`❌ ${TEMPLATE_ID_VAR} not configured`);
       return new Response(
-        JSON.stringify({ error: 'Email template not configured' }),
-        { 
-          status: 500, 
+        JSON.stringify({ error: `Email template not configured (${TEMPLATE_ID_VAR})` }),
+        {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
-    console.log(`📧 Sending confirmation email to ${body.to} for order ${body.orderId}`)
+    console.log(`📧 Sending ${emailType} email to ${body.to} for order ${body.orderId}`)
 
     // Format items
     const formattedItems = (body.items || []).map(item => ({

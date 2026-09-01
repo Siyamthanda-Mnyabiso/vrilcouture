@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
-const CONTACT_EMAIL = 'admin@vrilcouture.co.za';
+const CONTACT_EMAIL = 'vrilcouture@gmail.com';
 
 export const Contact = () => {
     const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
