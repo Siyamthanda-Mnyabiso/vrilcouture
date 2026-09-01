@@ -10,6 +10,10 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+// Where the "new order" alert email goes. Reuses the send-confirmation-email
+// function/template, just addressed to the store instead of the customer.
+const ADMIN_EMAIL = 'vrilcouture@gmail.com'
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -194,61 +198,83 @@ serve(async (req) => {
       // after it — not even the catch block — ever ran or logged.
       // waitUntil keeps the isolate alive for this specific task without
       // making Stitch's webhook wait on it.
+      const sendOrderEmail = (payload: Record<string, unknown>) =>
+        fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-confirmation-email`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          }
+        )
+
       const sendConfirmationEmail = async () => {
         try {
-          if (!data.user_id) return
-
-          const { data: userData, error: userError } = await supabaseClient
-            .from('users')
-            .select('email, full_name')
-            .eq('id', data.user_id)
-            .single()
-
-          if (userError) {
-            console.error(`❌ users lookup failed for user_id ${data.user_id}:`, JSON.stringify(userError))
-            return
-          }
-
-          if (!userData?.email) {
-            console.log(`⚠️ users row for ${data.user_id} has no email, skipping confirmation email`)
-            return
-          }
-
           const { data: itemsData } = await supabaseClient
             .from('order_items')
             .select('*')
             .eq('order_id', orderId)
 
-          const emailPayload = {
-            to: userData.email,
-            customerName: userData.full_name || 'Customer',
+          const emailItems = itemsData?.map(item => ({
+            name: item.product_name,
+            quantity: item.quantity,
+            price: item.price
+          })) || []
+
+          let customerName = 'Customer'
+
+          if (data.user_id) {
+            const { data: userData, error: userError } = await supabaseClient
+              .from('users')
+              .select('email, full_name')
+              .eq('id', data.user_id)
+              .single()
+
+            if (userError) {
+              console.error(`❌ users lookup failed for user_id ${data.user_id}:`, JSON.stringify(userError))
+            } else if (!userData?.email) {
+              console.log(`⚠️ users row for ${data.user_id} has no email, skipping confirmation email`)
+            } else {
+              customerName = userData.full_name || 'Customer'
+
+              const emailResponse = await sendOrderEmail({
+                to: userData.email,
+                customerName,
+                orderId: orderId,
+                orderTotal: data.total,
+                transactionId: paymentId,
+                items: emailItems
+              })
+
+              if (emailResponse.ok) {
+                console.log(`📧 Confirmation email sent to ${userData.email}`)
+              } else {
+                console.error('❌ Failed to send confirmation email:', await emailResponse.text())
+              }
+            }
+          }
+
+          // Admin order alert — sent independently of the customer email
+          // above, so the admin still hears about the order even when the
+          // customer has no account/email on file.
+          const adminEmailResponse = await sendOrderEmail({
+            to: ADMIN_EMAIL,
+            toName: 'Vril Couture Admin',
+            customerName,
             orderId: orderId,
             orderTotal: data.total,
             transactionId: paymentId,
-            items: itemsData?.map(item => ({
-              name: item.product_name,
-              quantity: item.quantity,
-              price: item.price
-            })) || []
-          }
+            items: emailItems,
+            emailType: 'admin'
+          })
 
-          // Call the send-confirmation-email function
-          const emailResponse = await fetch(
-            `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-confirmation-email`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(emailPayload),
-            }
-          )
-
-          if (emailResponse.ok) {
-            console.log(`📧 Confirmation email sent to ${userData.email}`)
+          if (adminEmailResponse.ok) {
+            console.log(`📧 Admin order alert sent to ${ADMIN_EMAIL}`)
           } else {
-            console.error('❌ Failed to send confirmation email:', await emailResponse.text())
+            console.error('❌ Failed to send admin order alert:', await adminEmailResponse.text())
           }
         } catch (emailError) {
           console.error('❌ Error sending confirmation email:', emailError)

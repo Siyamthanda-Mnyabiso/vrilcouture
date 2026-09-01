@@ -190,10 +190,10 @@ export const Terms = () => {
                         <p className="text-black/60 text-sm leading-relaxed mb-1">
                             Email:{' '}
                             <a
-                                href="mailto:admin@vrilcouture.co.za"
+                                href="mailto:vrilcouture@gmail.com"
                                 className="underline hover:text-black"
                             >
-                                admin@vrilcouture.co.za
+                                vrilcouture@gmail.com
                             </a>
                         </p>
                         <p className="text-black/60 text-sm leading-relaxed mb-3">
