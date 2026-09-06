@@ -49,7 +49,7 @@ supabase/
 |---|---|
 | `checkout` | Validates cart items/stock, creates a `pending` order, and requests a Stitch payment link |
 | `stitch-webhook` | Confirms payment, atomically decrements stock, and triggers the confirmation email |
-| `send-confirmation-email` | Sends customer order-confirmation and admin new-order-alert emails via SendGrid |
+| `send-confirmation-email` | Sends customer order-confirmation and admin new-order-alert emails via Resend |
 | `google-merchant-sync` | Pushes product/variant changes to Google Merchant Center |
 
 Local secrets for these functions live in `supabase/functions/.env` (gitignored) — see `supabase/functions/.env.example` for the required variables and setup notes.
@@ -58,4 +58,4 @@ Local secrets for these functions live in `supabase/functions/.env` (gitignored)
 
 ## Environment variables
 
-Copy `.env.example` to `.env` for the frontend (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). Server-side secrets (Stitch, SendGrid, Google Merchant service account) belong only in `supabase/functions/.env` / Supabase project secrets — never prefixed `VITE_`, and never referenced from `src/`.
+Copy `.env.example` to `.env` for the frontend (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). Server-side secrets (Stitch, Resend, Google Merchant service account) belong only in `supabase/functions/.env` / Supabase project secrets — never prefixed `VITE_`, and never referenced from `src/`.

@@ -106,7 +106,7 @@ export const Footer = () => {
                             </li>
                             <li className="flex gap-3">
                                 <Mail size={16} className="text-white/40" />
-                                vrilcouture@gmail.com
+                                admin@vrilcouture.co.za
                             </li>
                         </ul>
                     </div>

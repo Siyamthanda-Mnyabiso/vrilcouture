@@ -1,31 +1,33 @@
-<!--
-  Admin "new order" alert — SendGrid Dynamic Template source.
+// supabase/functions/send-confirmation-email/templates/adminOrderAlert.ts
+//
+// Store-facing "new order" alert, sent to ADMIN_EMAIL (see
+// stitch-webhook/index.ts) via Resend whenever an order is confirmed paid.
 
-  This file isn't loaded by any code; SendGrid reads templates from its own
-  dashboard, not from the repo. It's kept here as the source of truth so the
-  template can be recreated/edited without hunting through the SendGrid UI's
-  history.
+import type { OrderEmailData, RenderedEmail } from './types.ts';
 
-  Setup:
-    1. SendGrid dashboard > Email API > Dynamic Templates > Create Template.
-       Name it something like "Admin Order Alert".
-    2. Add a version > pick "Code Editor" > paste this whole file into the
-       HTML pane. Set the version's Subject field to:
-         🛍️ New order #{{order_id}} — R{{order_total}}
-    3. Copy the template id (starts "d-...") into the SENDGRID_ADMIN_TEMPLATE_ID
-       secret:
-         supabase secrets set SENDGRID_ADMIN_TEMPLATE_ID=d-xxxxxxxxxxxx
-    4. Redeploy send-confirmation-email and stitch-webhook if you haven't
-       already:
-         supabase functions deploy send-confirmation-email
-         supabase functions deploy stitch-webhook
+export function renderAdminOrderAlertEmail(data: OrderEmailData): RenderedEmail {
+    const subject = `🛍️ New order #${data.order_id} — R${data.order_total}`;
 
-  Variables (from send-confirmation-email/index.ts's dynamic_template_data,
-  same payload shape as the customer template):
-    customer_name, order_id, order_total, transaction_id, items[] (name,
-    quantity, price), order_date, from_email, current_year.
--->
-<!DOCTYPE html>
+    const itemRows = data.items
+        .map(
+            (item) => `
+                <tr>
+                  <td style="padding:10px 0; font-size:14px; color:#333333; border-bottom:1px solid #f0f0f0;">${item.name}</td>
+                  <td style="padding:10px 0; font-size:14px; color:#333333; border-bottom:1px solid #f0f0f0; text-align:center;">${item.quantity}</td>
+                  <td style="padding:10px 0; font-size:14px; color:#333333; border-bottom:1px solid #f0f0f0; text-align:right;">R${item.price}</td>
+                </tr>`
+        )
+        .join('');
+
+    const transactionRow = data.transaction_id
+        ? `
+                <tr>
+                  <td style="padding:14px 18px; font-size:14px; color:#666666; border-bottom:1px solid #e5e5e5;">Transaction ID</td>
+                  <td style="padding:14px 18px; font-size:14px; color:#111111; text-align:right; border-bottom:1px solid #e5e5e5;">${data.transaction_id}</td>
+                </tr>`
+        : '';
+
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -66,25 +68,19 @@
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e5e5; border-radius:6px;">
                 <tr>
                   <td style="padding:14px 18px; font-size:14px; color:#666666; border-bottom:1px solid #e5e5e5;">Order ID</td>
-                  <td style="padding:14px 18px; font-size:14px; color:#111111; text-align:right; border-bottom:1px solid #e5e5e5;">{{order_id}}</td>
+                  <td style="padding:14px 18px; font-size:14px; color:#111111; text-align:right; border-bottom:1px solid #e5e5e5;">${data.order_id}</td>
                 </tr>
                 <tr>
                   <td style="padding:14px 18px; font-size:14px; color:#666666; border-bottom:1px solid #e5e5e5;">Customer</td>
-                  <td style="padding:14px 18px; font-size:14px; color:#111111; text-align:right; border-bottom:1px solid #e5e5e5;">{{customer_name}}</td>
+                  <td style="padding:14px 18px; font-size:14px; color:#111111; text-align:right; border-bottom:1px solid #e5e5e5;">${data.customer_name}</td>
                 </tr>
                 <tr>
                   <td style="padding:14px 18px; font-size:14px; color:#666666; border-bottom:1px solid #e5e5e5;">Date</td>
-                  <td style="padding:14px 18px; font-size:14px; color:#111111; text-align:right; border-bottom:1px solid #e5e5e5;">{{order_date}}</td>
-                </tr>
-                {{#if transaction_id}}
-                <tr>
-                  <td style="padding:14px 18px; font-size:14px; color:#666666; border-bottom:1px solid #e5e5e5;">Transaction ID</td>
-                  <td style="padding:14px 18px; font-size:14px; color:#111111; text-align:right; border-bottom:1px solid #e5e5e5;">{{transaction_id}}</td>
-                </tr>
-                {{/if}}
+                  <td style="padding:14px 18px; font-size:14px; color:#111111; text-align:right; border-bottom:1px solid #e5e5e5;">${data.order_date}</td>
+                </tr>${transactionRow}
                 <tr>
                   <td style="padding:14px 18px; font-size:14px; color:#666666; font-weight:bold;">Order Total</td>
-                  <td style="padding:14px 18px; font-size:16px; color:#111111; text-align:right; font-weight:bold;">R{{order_total}}</td>
+                  <td style="padding:14px 18px; font-size:16px; color:#111111; text-align:right; font-weight:bold;">R${data.order_total}</td>
                 </tr>
               </table>
             </td>
@@ -101,14 +97,7 @@
                   <td style="padding:8px 0; font-size:13px; color:#999999; border-bottom:1px solid #e5e5e5;">Item</td>
                   <td style="padding:8px 0; font-size:13px; color:#999999; border-bottom:1px solid #e5e5e5; text-align:center;">Qty</td>
                   <td style="padding:8px 0; font-size:13px; color:#999999; border-bottom:1px solid #e5e5e5; text-align:right;">Price</td>
-                </tr>
-                {{#each items}}
-                <tr>
-                  <td style="padding:10px 0; font-size:14px; color:#333333; border-bottom:1px solid #f0f0f0;">{{this.name}}</td>
-                  <td style="padding:10px 0; font-size:14px; color:#333333; border-bottom:1px solid #f0f0f0; text-align:center;">{{this.quantity}}</td>
-                  <td style="padding:10px 0; font-size:14px; color:#333333; border-bottom:1px solid #f0f0f0; text-align:right;">R{{this.price}}</td>
-                </tr>
-                {{/each}}
+                </tr>${itemRows}
               </table>
             </td>
           </tr>
@@ -127,7 +116,7 @@
           <tr>
             <td style="padding:20px 32px; background-color:#fafafa; border-top:1px solid #eeeeee;">
               <p style="margin:0; font-size:12px; color:#999999; text-align:center;">
-                Automated order alert &middot; {{from_email}} &middot; &copy; {{current_year}} Vril Couture
+                Automated order alert &middot; ${data.from_email} &middot; &copy; ${data.current_year} Vril Couture
               </p>
             </td>
           </tr>
@@ -137,4 +126,7 @@
     </tr>
   </table>
 </body>
-</html>
+</html>`;
+
+    return { subject, html };
+}

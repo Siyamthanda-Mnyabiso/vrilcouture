@@ -12,7 +12,7 @@ const corsHeaders = {
 
 // Where the "new order" alert email goes. Reuses the send-confirmation-email
 // function/template, just addressed to the store instead of the customer.
-const ADMIN_EMAIL = 'vrilcouture@gmail.com'
+const ADMIN_EMAIL = 'admin@vrilcouture.co.za'
 
 serve(async (req) => {
   // Handle CORS preflight
