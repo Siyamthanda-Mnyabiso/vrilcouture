@@ -22,7 +22,7 @@ export const Home = () => {
 
     useEffect(() => {
         fetchProducts();
-    }, []);
+    }, [fetchProducts]);
 
     return (
         <main>

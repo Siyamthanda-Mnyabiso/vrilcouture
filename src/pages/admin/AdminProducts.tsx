@@ -11,7 +11,7 @@ export const AdminProducts = () => {
 
     useEffect(() => {
         fetchProducts({ sortBy: 'newest' });
-    }, []);
+    }, [fetchProducts]);
 
     const handleDelete = async (id: string, name: string) => {
         if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;

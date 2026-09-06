@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User as UserIcon, Package, UserCog, MapPin, LogOut, LayoutDashboard } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 export function AccountDropdown() {
     const { user, signOut } = useAuth();

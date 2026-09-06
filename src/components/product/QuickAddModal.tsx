@@ -83,7 +83,7 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
     useEffect(() => {
         if (!isOpen) return;
         fetchVariants(product.id);
-    }, [isOpen, product.id]);
+    }, [isOpen, product.id, fetchVariants]);
 
     const sizes = useMemo(() => Array.from(new Set(variants.map((v) => v.size))), [variants]);
     const colors = useMemo(() => Array.from(new Set(variants.map((v) => v.color))), [variants]);

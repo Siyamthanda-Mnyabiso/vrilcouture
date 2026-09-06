@@ -25,6 +25,32 @@ interface CheckoutItem {
     quantity: number;
 }
 
+interface ProductRow {
+    id: string;
+    name: string;
+    price: number;
+    stock: number;
+}
+
+interface VariantRow {
+    id: string;
+    stock: number;
+    size: string;
+    color: string;
+    product_id: string;
+    products: { id: string; name: string; price: number };
+}
+
+interface OrderItemPayload {
+    product_id: string;
+    product_name: string;
+    variant_id: string | null;
+    size: string;
+    color: string;
+    price: number;
+    quantity: number;
+}
+
 async function getStitchExpressToken(): Promise<string> {
     const response = await fetch(`${STITCH_EXPRESS_BASE}/token`, {
         method: 'POST',
@@ -120,13 +146,13 @@ Deno.serve(async (req) => {
         const productsOnly = productsRes.data ?? [];
 
         let subtotal = 0;
-        const orderItemsPayload: any[] = [];
+        const orderItemsPayload: OrderItemPayload[] = [];
 
         for (const item of items) {
             const isVariantless = item.variantId === item.productId;
 
             if (isVariantless) {
-                const product = productsOnly.find((p: any) => p.id === item.productId);
+                const product = (productsOnly as ProductRow[]).find((p) => p.id === item.productId);
                 if (!product) {
                     return new Response(
                         JSON.stringify({ error: `Product ${item.productId} not found` }),
@@ -152,7 +178,7 @@ Deno.serve(async (req) => {
                     quantity: item.quantity,
                 });
             } else {
-                const variant = variants.find((v: any) => v.id === item.variantId);
+                const variant = (variants as VariantRow[]).find((v) => v.id === item.variantId);
                 if (!variant) {
                     return new Response(
                         JSON.stringify({ error: `Variant ${item.variantId} not found` }),
@@ -183,7 +209,7 @@ Deno.serve(async (req) => {
             }
         }
 
-        const shipping = subtotal >= 1000 ? 0 : 109;
+        const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
         const total = subtotal + shipping;
 
         // Create the order as 'pending' — it only becomes 'paid' once the

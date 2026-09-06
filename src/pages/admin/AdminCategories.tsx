@@ -15,7 +15,7 @@ export const AdminCategories = () => {
 
     useEffect(() => {
         fetchCategories();
-    }, []);
+    }, [fetchCategories]);
 
     const handleCreate = async () => {
         if (!newName.trim()) return;

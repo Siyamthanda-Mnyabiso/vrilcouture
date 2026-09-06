@@ -35,16 +35,4 @@ export interface CreateProductInput {
     stock: number;
 }
 
-export interface CreateProductInput {
-    name: string;
-    description?: string;
-    price: number;
-    original_price?: number;
-    image_url?: string;
-    category_id?: string;
-    brand?: string;
-    sku?: string;
-    stock: number;
-}
-
-export interface UpdateProductInput extends Partial<CreateProductInput> {}
+export type UpdateProductInput = Partial<CreateProductInput>;

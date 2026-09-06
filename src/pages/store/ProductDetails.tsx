@@ -22,11 +22,11 @@ export const ProductDetails = () => {
 
     useEffect(() => {
         if (slug) fetchProductById(slug);
-    }, [slug]);
+    }, [slug, fetchProductById]);
 
     useEffect(() => {
         if (product?.id) fetchVariants(product.id);
-    }, [product?.id]);
+    }, [product?.id, fetchVariants]);
 
     // Reset the selected media/quantity whenever the product changes.
     const [prevProductId, setPrevProductId] = useState(product?.id);
@@ -40,7 +40,7 @@ export const ProductDetails = () => {
         if (product?.category_id) {
             fetchProducts({ category: product.category_id, limit: 5 });
         }
-    }, [product?.category_id]);
+    }, [product?.category_id, fetchProducts]);
 
     const relatedProducts = products.filter((p) => p.id !== product?.id).slice(0, 4);
 

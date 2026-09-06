@@ -11,7 +11,7 @@ export const AdminCustomers = () => {
 
     useEffect(() => {
         fetchCustomers();
-    }, []);
+    }, [fetchCustomers]);
 
     const handleRoleToggle = async (id: string, currentRole: 'customer' | 'admin') => {
         const nextRole = currentRole === 'admin' ? 'customer' : 'admin';

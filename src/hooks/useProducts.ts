@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { syncProductToMerchant, deleteMerchantListing } from '../lib/googleMerchantSync';
 import type {
@@ -20,7 +20,7 @@ export function useProducts() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchProducts = async (params?: FetchProductsParams) => {
+    const fetchProducts = useCallback(async (params?: FetchProductsParams) => {
         setLoading(true);
         setError(null);
         try {
@@ -50,9 +50,9 @@ export function useProducts() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const fetchProductById = async (id: string) => {
+    const fetchProductById = useCallback(async (id: string) => {
         setLoading(true);
         setError(null);
         try {
@@ -76,7 +76,7 @@ export function useProducts() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const createProduct = async (input: CreateProductInput) => {
         const { data, error: insertError } = await supabase

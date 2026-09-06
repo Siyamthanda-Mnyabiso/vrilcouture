@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# Vril Couture
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A boutique fashion storefront: a customer-facing shop plus an admin panel, built with React 19, TypeScript, Vite, Tailwind CSS v4, and Supabase (Postgres, Auth, Edge Functions).
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Frontend:** React 19 + React Router 7, Zustand for cart state, Tailwind v4
+- **Backend:** Supabase (Postgres + Auth) with Deno-based Edge Functions for checkout, payments, and email
+- **Payments:** Stitch (Express API) via a payment-link checkout flow
+- **Product sync:** Google Merchant Center, kept in sync automatically on product/variant create, update, delete, and stock changes
+- **Analytics:** Vercel Web Analytics
 
-## React Compiler
+## Getting started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+cp .env.example .env   # fill in your Supabase project URL + anon key
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Other scripts:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build      # tsc -b && vite build
+npm run lint        # eslint .
+npm run preview     # preview a production build
+npm run gen:types   # regenerate src/types/database.ts from the linked Supabase project
 ```
+
+## Project structure
+
+```
+src/
+  components/   UI building blocks (auth, cart, category, hero, layout, product, ui)
+  features/     Domain types (products, categories, orders)
+  hooks/        Data-fetching hooks (one per resource, wrapping Supabase queries)
+  pages/        Route-level views: store, account, auth, admin
+  routes/       React Router route definitions, grouped by area
+  store/        Zustand stores (cart)
+  context/      React context providers (auth)
+  lib/          Supabase client, Google Merchant sync client, misc integrations
+supabase/
+  functions/    Edge Functions (Deno) — see below
+```
+
+## Supabase Edge Functions
+
+| Function | Purpose |
+|---|---|
+| `checkout` | Validates cart items/stock, creates a `pending` order, and requests a Stitch payment link |
+| `stitch-webhook` | Confirms payment, atomically decrements stock, and triggers the confirmation email |
+| `send-confirmation-email` | Sends customer order-confirmation and admin new-order-alert emails via SendGrid |
+| `google-merchant-sync` | Pushes product/variant changes to Google Merchant Center |
+
+Local secrets for these functions live in `supabase/functions/.env` (gitignored) — see `supabase/functions/.env.example` for the required variables and setup notes.
+
+**Note:** the database schema (tables, RLS policies, RPC functions like `decrement_stock_for_order`) is not currently tracked as SQL migrations in this repo — it lives only in the linked Supabase project. Pull it locally with `supabase db pull` before making schema changes, so changes stay reproducible.
+
+## Environment variables
+
+Copy `.env.example` to `.env` for the frontend (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). Server-side secrets (Stitch, SendGrid, Google Merchant service account) belong only in `supabase/functions/.env` / Supabase project secrets — never prefixed `VITE_`, and never referenced from `src/`.

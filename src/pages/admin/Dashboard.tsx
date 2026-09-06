@@ -32,7 +32,7 @@ export const Dashboard = () => {
 
     useEffect(() => {
         fetchStats();
-    }, []);
+    }, [fetchStats]);
 
     if (loading) return <Loader />;
 

@@ -163,9 +163,9 @@ export const validateImageUrl = (url: string): ValidationResult => {
 /**
  * Validate a form object
  */
-export const validateForm = <T extends Record<string, any>>(
+export const validateForm = <T extends Record<string, unknown>>(
     data: T,
-    rules: Record<keyof T, (value: any) => ValidationResult>
+    rules: Record<keyof T, (value: unknown) => ValidationResult>
 ): {
     isValid: boolean;
     errors: Partial<Record<keyof T, string>>;

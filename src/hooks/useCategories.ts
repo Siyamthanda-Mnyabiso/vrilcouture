@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Category } from '../features/categories/category.types';
 
@@ -7,7 +7,7 @@ export function useCategories() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -22,7 +22,7 @@ export function useCategories() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const createCategory = async (input: { name: string; slug?: string }) => {
         const slug =
