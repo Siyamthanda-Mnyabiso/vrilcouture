@@ -61,11 +61,11 @@ export const AdminProductForm = () => {
     useEffect(() => {
         fetchCategories();
         if (isEditing && id) fetchProductById(id);
-    }, [id]);
+    }, [id, isEditing, fetchCategories, fetchProductById]);
 
     useEffect(() => {
         if (isEditing && id) fetchVariants(id);
-    }, [id, isEditing]);
+    }, [id, isEditing, fetchVariants]);
 
     // Populate the form once the product being edited has loaded.
     const [loadedProductId, setLoadedProductId] = useState<string | undefined>(undefined);

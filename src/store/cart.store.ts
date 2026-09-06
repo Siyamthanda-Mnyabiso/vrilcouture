@@ -145,7 +145,7 @@ export const useCartStore = create<CartStore>()(
             name: 'cart-storage',
             storage: createJSONStorage(() => localStorage),
             version: 2,
-            migrate: (persistedState: any, version: number) => {
+            migrate: (persistedState: unknown, version: number) => {
                 console.log('🟡 migrate called, stored version:', version, 'persisted state:', persistedState);
                 // Version 2: Cart items now keyed by variantId instead of productId
                 if (version < 2) {

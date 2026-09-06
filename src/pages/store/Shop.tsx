@@ -20,14 +20,14 @@ export const Shop = () => {
 
     useEffect(() => {
         fetchCategories();
-    }, []);
+    }, [fetchCategories]);
 
     useEffect(() => {
         fetchProducts({
             category: selectedCategory || undefined,
             sortBy: sortBy as 'newest' | 'price-low' | 'price-high' | 'popular',
         });
-    }, [selectedCategory, sortBy]);
+    }, [selectedCategory, sortBy, fetchProducts]);
 
     const handleCategoryChange = (category: string) => {
         setSelectedCategory(category);

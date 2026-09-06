@@ -282,7 +282,7 @@ serve(async (req) => {
         }
       }
 
-      // @ts-ignore -- EdgeRuntime is a Supabase/Deno Deploy global, not in lib.deno.d.ts
+      // @ts-expect-error -- EdgeRuntime is a Supabase/Deno Deploy global, not in lib.deno.d.ts
       EdgeRuntime.waitUntil(sendConfirmationEmail())
 
       return new Response(

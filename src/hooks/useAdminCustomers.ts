@@ -1,5 +1,5 @@
 // src/hooks/useAdminCustomers.ts
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '../types/user';
 
@@ -8,7 +8,7 @@ export function useAdminCustomers() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchCustomers = async () => {
+    const fetchCustomers = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -23,7 +23,7 @@ export function useAdminCustomers() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const updateCustomerRole = async (id: string, role: 'customer' | 'admin') => {
         const { data, error: updateError } = await supabase

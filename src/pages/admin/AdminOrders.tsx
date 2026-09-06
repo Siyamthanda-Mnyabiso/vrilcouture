@@ -30,7 +30,7 @@ export const AdminOrders = () => {
 
     useEffect(() => {
         fetchOrders();
-    }, []);
+    }, [fetchOrders]);
 
     if (loading) return <Loader />;
 

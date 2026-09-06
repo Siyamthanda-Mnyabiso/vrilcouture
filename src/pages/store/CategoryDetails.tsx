@@ -17,7 +17,7 @@ export const CategoryDetails = () => {
 
     useEffect(() => {
         fetchCategories();
-    }, []);
+    }, [fetchCategories]);
 
     const categoryChecked = !!slug && !categoriesLoading;
     const category: Category | null = categoryChecked
@@ -30,7 +30,7 @@ export const CategoryDetails = () => {
                 category: category.id
             });
         }
-    }, [category]);
+    }, [category, fetchProducts]);
 
 
 

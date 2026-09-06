@@ -13,7 +13,7 @@ export const Search = () => {
 
     useEffect(() => {
         search(query);
-    }, [query]);
+    }, [query, search]);
 
     return (
         <main className="bg-[#FAFAF8] min-h-screen py-16">

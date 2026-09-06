@@ -1,5 +1,5 @@
 // src/hooks/useSearch.ts
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../features/products/product.types';
 import type { Category } from '../features/categories/category.types';
@@ -10,7 +10,7 @@ export function useSearch() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const search = async (query: string) => {
+    const search = useCallback(async (query: string) => {
         const trimmed = query.trim();
 
         if (!trimmed) {
@@ -48,7 +48,7 @@ export function useSearch() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     return {
         products,

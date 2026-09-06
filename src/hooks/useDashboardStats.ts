@@ -1,5 +1,5 @@
 // src/hooks/useDashboardStats.ts
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Order } from '../features/orders/order.types';
 
@@ -17,7 +17,7 @@ export function useDashboardStats() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -76,7 +76,7 @@ export function useDashboardStats() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     return { stats, loading, error, fetchStats };
 }

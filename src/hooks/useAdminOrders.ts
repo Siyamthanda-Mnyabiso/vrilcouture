@@ -1,5 +1,5 @@
 // src/hooks/useAdminOrders.ts
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Order } from '../features/orders/order.types';
 
@@ -10,7 +10,7 @@ export function useAdminOrders() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -25,7 +25,7 @@ export function useAdminOrders() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const fetchOrderItems = async (orderId: string) => {
         const { data, error: fetchError } = await supabase

@@ -1,6 +1,6 @@
 // src/hooks/useAdminProductVariants.ts
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { syncProductToMerchant, deleteMerchantListing } from '../lib/googleMerchantSync';
 
@@ -18,7 +18,7 @@ export function useAdminProductVariants() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchVariants = async (productId: string) => {
+    const fetchVariants = useCallback(async (productId: string) => {
         setLoading(true);
         setError(null);
 
@@ -43,7 +43,7 @@ export function useAdminProductVariants() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
 
     const addVariant = async (

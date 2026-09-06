@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -19,7 +19,7 @@ export const Checkout = () => {
     const [error, setError] = useState<string | null>(null);
     const [validatingItems, setValidatingItems] = useState(false);
     const [testMode, setTestMode] = useState(false);
-    const [debugInfo, setDebugInfo] = useState<any>(null);
+    const [debugInfo, setDebugInfo] = useState<unknown>(null);
     const [stitchAccepted, setStitchAccepted] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -75,13 +75,15 @@ export const Checkout = () => {
                 throw new Error('Failed to validate cart items');
             }
 
+            type StockRow = { id: string; stock: number };
+
             const validIds = new Set<string>([
-                ...((variantsResult.data ?? []).map((v: any) => v.id)),
-                ...((productsResult.data ?? []).map((p: any) => p.id)),
+                ...((variantsResult.data ?? []).map((v: StockRow) => v.id)),
+                ...((productsResult.data ?? []).map((p: StockRow) => p.id)),
             ]);
             const validStockMap = new Map<string, number>([
-                ...((variantsResult.data ?? []).map((v: any) => [v.id, v.stock] as [string, number])),
-                ...((productsResult.data ?? []).map((p: any) => [p.id, p.stock] as [string, number])),
+                ...((variantsResult.data ?? []).map((v: StockRow) => [v.id, v.stock] as [string, number])),
+                ...((productsResult.data ?? []).map((p: StockRow) => [p.id, p.stock] as [string, number])),
             ]);
 
             const invalidItems = items.filter(item => !validIds.has(item.variantId));
@@ -228,7 +230,7 @@ export const Checkout = () => {
                 result = JSON.parse(responseText);
             } catch (parseError) {
                 console.error('❌ Failed to parse response as JSON:', parseError);
-                throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}...`);
+                throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}...`, { cause: parseError });
             }
 
             setDebugInfo(result);
@@ -259,7 +261,7 @@ export const Checkout = () => {
                     try {
                         result = JSON.parse(retryText);
                     } catch (parseError) {
-                        throw new Error('Invalid response from server. Please try again.');
+                        throw new Error('Invalid response from server. Please try again.', { cause: parseError });
                     }
 
                     if (!retryResponse.ok) {
@@ -371,7 +373,7 @@ export const Checkout = () => {
                     </div>
                 )}
 
-                {debugInfo && (
+                {debugInfo != null && (
                     <div className="border border-black/10 p-4 mb-8 text-xs font-mono overflow-auto max-h-60">
                         <details>
                             <summary className="cursor-pointer font-medium text-black/60 uppercase tracking-wide text-[11px]">

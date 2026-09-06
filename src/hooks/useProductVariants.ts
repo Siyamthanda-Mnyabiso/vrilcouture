@@ -1,5 +1,5 @@
 // src/hooks/useProductVariants.ts
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface ProductVariant {
@@ -16,7 +16,7 @@ export function useProductVariants() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchVariants = async (productId: string) => {
+    const fetchVariants = useCallback(async (productId: string) => {
         setLoading(true);
         setError(null);
         try {
@@ -34,7 +34,7 @@ export function useProductVariants() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     return { variants, loading, error, fetchVariants };
 }

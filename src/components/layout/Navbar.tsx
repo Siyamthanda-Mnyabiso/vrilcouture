@@ -78,7 +78,7 @@ export function Navbar() {
     useEffect(() => {
         fetchCategories();
         fetchMegaMenuProducts({ sortBy: 'newest', limit: 2 });
-    }, []);
+    }, [fetchCategories, fetchMegaMenuProducts]);
 
     useEffect(() => {
         if (searchOpen) {
@@ -100,7 +100,7 @@ export function Navbar() {
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
         };
-    }, [searchQuery]);
+    }, [searchQuery, search]);
 
     // close dropdown on outside click
     useEffect(() => {
