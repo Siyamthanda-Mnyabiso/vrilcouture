@@ -1,6 +1,8 @@
 // supabase/functions/send-confirmation-email/index.ts
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { renderCustomerOrderConfirmationEmail } from './templates/customerOrderConfirmation.ts'
+import { renderAdminOrderAlertEmail } from './templates/adminOrderAlert.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,18 +22,18 @@ interface EmailRequest {
     price: number
   }>
   transactionId?: string
-  // 'customer' (default) uses SENDGRID_TEMPLATE_ID; 'admin' uses
-  // SENDGRID_ADMIN_TEMPLATE_ID, a separate store-facing "new order" template.
+  // 'customer' (default) renders customerOrderConfirmation.ts; 'admin'
+  // renders adminOrderAlert.ts, a separate store-facing "new order" email.
   emailType?: 'customer' | 'admin'
 }
 
 serve(async (req) => {
   console.log('🚀 Function invoked at:', new Date().toISOString());
   console.log('📋 Method:', req.method);
-  
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
+    return new Response('ok', {
       headers: corsHeaders,
       status: 200
     })
@@ -41,8 +43,8 @@ serve(async (req) => {
     if (req.method !== 'POST') {
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),
-        { 
-          status: 405, 
+        {
+          status: 405,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
@@ -51,13 +53,13 @@ serve(async (req) => {
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     console.log('🔑 Auth header present:', !!authHeader);
-    
+
     if (!authHeader) {
       console.error('❌ No authorization header');
       return new Response(
         JSON.stringify({ error: 'Authorization required' }),
-        { 
-          status: 401, 
+        {
+          status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
@@ -70,66 +72,56 @@ serve(async (req) => {
     } catch (parseError) {
       console.error('❌ Failed to parse JSON:', parseError);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Invalid JSON payload',
           details: 'Request body must be valid JSON'
         }),
-        { 
-          status: 400, 
+        {
+          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
-    
+
     // Validation
     if (!body.to) {
       return new Response(
         JSON.stringify({ error: 'Recipient email (to) is required' }),
-        { 
-          status: 400, 
+        {
+          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
-    
+
     if (!body.orderId) {
       return new Response(
         JSON.stringify({ error: 'Order ID is required' }),
-        { 
-          status: 400, 
+        {
+          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
-    // Get SendGrid configuration from environment variables
-    const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY')
-    const FROM_EMAIL = Deno.env.get('SENDGRID_FROM_EMAIL') || 'noreply@vrilcouture.co.za'
-    const FROM_NAME = Deno.env.get('SENDGRID_FROM_NAME') || 'Vril Couture Collection'
+    // Get Resend configuration from environment variables
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+    const FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'admin@vrilcouture.co.za'
+    const FROM_NAME = Deno.env.get('RESEND_FROM_NAME') || 'Vril Couture Collection'
+    // Where replies to these emails land. Defaults to FROM_EMAIL, but kept
+    // separate in case the sending address and the monitored inbox ever
+    // diverge (e.g. a dedicated orders@ sender replying to admin@).
+    const REPLY_TO_EMAIL = Deno.env.get('RESEND_REPLY_TO_EMAIL') || FROM_EMAIL
     const emailType = body.emailType === 'admin' ? 'admin' : 'customer'
-    const TEMPLATE_ID_VAR = emailType === 'admin' ? 'SENDGRID_ADMIN_TEMPLATE_ID' : 'SENDGRID_TEMPLATE_ID'
-    const TEMPLATE_ID = Deno.env.get(TEMPLATE_ID_VAR)
 
     console.log('📧 Environment check:');
-    console.log('  SENDGRID_API_KEY:', SENDGRID_API_KEY ? '✅ Set' : '❌ Missing');
-    console.log(`  ${TEMPLATE_ID_VAR}:`, TEMPLATE_ID ? '✅ Set' : '❌ Missing');
+    console.log('  RESEND_API_KEY:', RESEND_API_KEY ? '✅ Set' : '❌ Missing');
     console.log('  FROM_EMAIL:', FROM_EMAIL);
 
-    if (!SENDGRID_API_KEY) {
-      console.error('❌ SENDGRID_API_KEY not configured');
+    if (!RESEND_API_KEY) {
+      console.error('❌ RESEND_API_KEY not configured');
       return new Response(
         JSON.stringify({ error: 'Email service not configured - missing API key' }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-
-    if (!TEMPLATE_ID) {
-      console.error(`❌ ${TEMPLATE_ID_VAR} not configured`);
-      return new Response(
-        JSON.stringify({ error: `Email template not configured (${TEMPLATE_ID_VAR})` }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -146,74 +138,61 @@ serve(async (req) => {
       price: Number(item.price).toFixed(2)
     }))
 
-    // Prepare SendGrid payload
-    const sendgridPayload = {
-      personalizations: [
-        {
-          to: [
-            {
-              email: body.to.trim(),
-              name: (body.toName || body.customerName).trim(),
-            }
-          ],
-          dynamic_template_data: {
-            customer_name: body.customerName.trim(),
-            order_id: body.orderId.trim(),
-            order_total: Number(body.orderTotal).toFixed(2),
-            transaction_id: (body.transactionId || '').trim(),
-            items: formattedItems,
-            order_date: new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            }),
-            from_email: FROM_EMAIL,
-            current_year: new Date().getFullYear().toString()
-          },
-        },
-      ],
-      from: {
-        email: FROM_EMAIL,
-        name: FROM_NAME,
-      },
-      reply_to: {
-        email: FROM_EMAIL,
-        name: FROM_NAME,
-      },
-      template_id: TEMPLATE_ID,
-      tracking_settings: {
-        click_tracking: { enable: true },
-        open_tracking: { enable: true },
-      },
+    const templateData = {
+      customer_name: body.customerName.trim(),
+      order_id: body.orderId.trim(),
+      order_total: Number(body.orderTotal).toFixed(2),
+      transaction_id: (body.transactionId || '').trim(),
+      items: formattedItems,
+      order_date: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      from_email: FROM_EMAIL,
+      current_year: new Date().getFullYear().toString()
     }
 
-    console.log('📤 Sending to SendGrid API...');
+    const { subject, html } = emailType === 'admin'
+      ? renderAdminOrderAlertEmail(templateData)
+      : renderCustomerOrderConfirmationEmail(templateData)
 
-    // Send email via SendGrid
-    const sendgridResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    // Prepare Resend payload
+    const resendPayload = {
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: [body.toName ? `${body.toName.trim()} <${body.to.trim()}>` : body.to.trim()],
+      reply_to: REPLY_TO_EMAIL,
+      subject,
+      html,
+    }
+
+    console.log('📤 Sending to Resend API...');
+
+    // Send email via Resend
+    const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${SENDGRID_API_KEY}`,
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(sendgridPayload),
+      body: JSON.stringify(resendPayload),
     })
 
-    const responseText = await sendgridResponse.text()
-    
-    console.log(`📬 SendGrid response status: ${sendgridResponse.status}`);
-    
-    if (!sendgridResponse.ok) {
-      console.error('❌ SendGrid error:', responseText);
+    const responseText = await resendResponse.text()
+
+    console.log(`📬 Resend response status: ${resendResponse.status}`);
+
+    if (!resendResponse.ok) {
+      console.error('❌ Resend error:', responseText);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Failed to send email',
           details: responseText
         }),
-        { 
-          status: 500, 
+        {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
@@ -228,22 +207,22 @@ serve(async (req) => {
         orderId: body.orderId,
         recipient: body.to,
       }),
-      { 
-        status: 200, 
+      {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
 
   } catch (error) {
     console.error('❌ Unexpected error:', error);
-    
+
     return new Response(
       JSON.stringify({
         error: 'Internal server error',
-        message: error.message || 'Unknown error occurred',
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
       }),
-      { 
-        status: 500, 
+      {
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )

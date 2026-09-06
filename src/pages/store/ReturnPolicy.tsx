@@ -132,10 +132,10 @@ export const ReturnPolicy = () => {
                             If you have any questions about your order, we're always
                             happy to help. Contact us at{' '}
                             <a
-                                href="mailto:vrilcouture@gmail.com"
+                                href="mailto:admin@vrilcouture.co.za"
                                 className="underline hover:text-black"
                             >
-                                vrilcouture@gmail.com
+                                admin@vrilcouture.co.za
                             </a>
                             , and we'll get back to you as soon as possible.
                         </p>
