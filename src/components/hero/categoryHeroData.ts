@@ -1,7 +1,6 @@
 // src/components/hero/categoryHeroData.ts
 
 export interface HeroCategory {
-    number: string;
     name: string;
     image: string;
     href: string;
@@ -12,7 +11,6 @@ export interface HeroCategory {
 
 export const heroCategories: HeroCategory[] = [
     {
-        number: '01',
         name: 'Hoodies',
         image: '/category-hero/hoodies.png',
         href: '/category/hoodies',
@@ -20,7 +18,6 @@ export const heroCategories: HeroCategory[] = [
         area: 'hoodies',
     },
     {
-        number: '02',
         name: 'T-Shirts',
         image: '/category-hero/t-shirts.png',
         href: '/category/t-shirts',
@@ -28,7 +25,6 @@ export const heroCategories: HeroCategory[] = [
         area: 'tshirts',
     },
     {
-        number: '03',
         name: 'Shorts',
         image: '/category-hero/shorts.png',
         href: '/category/shorts',
@@ -36,7 +32,6 @@ export const heroCategories: HeroCategory[] = [
         area: 'shorts',
     },
     {
-        number: '04',
         name: 'Sweaters',
         image: '/category-hero/sweaters.png',
         href: '/category/sweaters',
@@ -44,7 +39,6 @@ export const heroCategories: HeroCategory[] = [
         area: 'sweaters',
     },
     {
-        number: '05',
         name: 'Accessories',
         image: '/category-hero/accessories.png',
         href: '/category/accessories',
@@ -52,7 +46,6 @@ export const heroCategories: HeroCategory[] = [
         area: 'accessories',
     },
     {
-        number: '06',
         name: 'New Arrivals',
         image: '/category-hero/new-arrivals.png',
         href: '/shop',
@@ -60,7 +53,6 @@ export const heroCategories: HeroCategory[] = [
         area: 'newArrivals',
     },
     {
-        number: '07',
         name: 'Limited Edition',
         image: '/category-hero/limited-edition.png',
         href: '/category/limited-edition',
