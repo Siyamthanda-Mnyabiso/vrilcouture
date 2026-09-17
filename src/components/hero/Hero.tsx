@@ -1,61 +1,62 @@
-import { useParallax } from '../../hooks/useParallax';
+// src/components/hero/Hero.tsx
+import { CategoryHeroTile } from './CategoryHeroTile';
+import { heroCategories } from './categoryHeroData';
+
+const category = (area: (typeof heroCategories)[number]['area']) =>
+    heroCategories.find((c) => c.area === area)!;
 
 export function Hero() {
-    const { ref, offset } = useParallax<HTMLElement>(0.2);
+    const hoodies = category('hoodies');
+    const tshirts = category('tshirts');
+    const shorts = category('shorts');
+    const sweaters = category('sweaters');
+    const accessories = category('accessories');
+    const newArrivals = category('newArrivals');
+    const limitedEdition = category('limitedEdition');
 
     return (
-        <section ref={ref} className="relative h-screen bg-black overflow-hidden">
-            <video
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="absolute -inset-y-[30%] inset-x-0 w-full h-[160%] object-cover will-change-transform"
-                style={{ transform: `translate3d(0, ${offset}px, 0)` }}
-            >
-                <source
-                    src="https://stream.mux.com/AuTOGe1xpr0102MaHp1abrgj1jwJ01bojNouGXGdtOzTLM/high.mp4"
-                    type="video/mp4"
+        <section className="relative w-full bg-black">
+            {/* Desktop / tablet — asymmetric editorial mosaic */}
+            <div className="hidden md:grid md:grid-cols-[1.4fr_1fr_1fr] gap-[3px] p-[3px]">
+                <CategoryHeroTile
+                    category={hoodies}
+                    className="row-span-2"
+                    nameClassName="text-3xl lg:text-4xl"
                 />
-            </video>
+                <CategoryHeroTile category={tshirts} className="h-[320px]" nameClassName="text-xl lg:text-2xl" />
+                <CategoryHeroTile category={shorts} className="h-[320px]" nameClassName="text-xl lg:text-2xl" />
+                <CategoryHeroTile category={sweaters} className="h-[280px]" nameClassName="text-xl lg:text-2xl" />
+                <CategoryHeroTile category={accessories} className="h-[280px]" nameClassName="text-xl lg:text-2xl" />
 
-            <div className="absolute inset-0 bg-black/40" />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black" />
+                <CategoryHeroTile
+                    category={newArrivals}
+                    className="col-span-3 h-[400px]"
+                    nameClassName="text-4xl lg:text-5xl"
+                />
 
-            <div className="relative z-10 h-full flex items-center justify-center">
-
-                <h1 className="
-                    font-display
-                    text-white
-                    uppercase
-                    text-[13vw]
-                    leading-none
-                    tracking-[0.15em]
-                    font-light
-                ">
-                    VRIL
-                </h1>
-
+                <CategoryHeroTile
+                    category={limitedEdition}
+                    className="col-span-3 h-[300px]"
+                    nameClassName="text-3xl lg:text-4xl"
+                    align="center"
+                />
             </div>
 
-
-            <div className="
-                absolute bottom-12
-                left-0
-                right-0
-                flex
-                justify-center
-            ">
-                <p className="
-                    text-white/60
-                    uppercase
-                    text-xs
-                    tracking-[0.8em]
-                ">
-                    Couture
-                </p>
+            {/* Mobile — editorial vertical sequence with varying heights */}
+            <div className="flex flex-col gap-[3px] p-[3px] md:hidden">
+                <CategoryHeroTile category={hoodies} className="h-[440px]" nameClassName="text-2xl" />
+                <CategoryHeroTile category={tshirts} className="h-[300px]" nameClassName="text-xl" />
+                <CategoryHeroTile category={shorts} className="h-[260px]" nameClassName="text-xl" />
+                <CategoryHeroTile category={sweaters} className="h-[300px]" nameClassName="text-xl" />
+                <CategoryHeroTile category={accessories} className="h-[240px]" nameClassName="text-lg" />
+                <CategoryHeroTile category={newArrivals} className="h-[360px]" nameClassName="text-3xl" />
+                <CategoryHeroTile
+                    category={limitedEdition}
+                    className="h-[320px]"
+                    nameClassName="text-2xl"
+                    align="center"
+                />
             </div>
-
         </section>
     );
 }
