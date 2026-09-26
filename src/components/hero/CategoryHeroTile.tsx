@@ -40,6 +40,9 @@ export function CategoryHeroTile({
                     isCentered ? 'items-center text-center' : 'items-start text-left'
                 }`}
             >
+                <span className="text-[10px] md:text-[11px] tracking-[0.3em] text-white/70 transition-transform duration-[450ms] ease-out group-hover:-translate-y-0.5">
+                    {category.number}
+                </span>
                 <span
                     className={`font-display uppercase text-white tracking-[0.2em] leading-none transition-transform duration-[450ms] ease-out group-hover:-translate-y-0.5 ${nameClassName}`}
                 >
