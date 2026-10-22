@@ -38,7 +38,7 @@ export const ProductGallery = ({
                 <img
                     src={mainImage || placeholderImage}
                     alt={productName}
-                    className={`w-full h-full object-cover transition-transform duration-300 ${
+                    className={`w-full h-full object-contain transition-transform duration-300 ${
                         isZoomed ? 'scale-150' : 'scale-100'
                     }`}
                 />
@@ -61,7 +61,7 @@ export const ProductGallery = ({
                             <img
                                 src={image}
                                 alt={`${productName} - view ${index + 1}`}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-contain"
                                 loading="lazy"
                             />
                         </button>

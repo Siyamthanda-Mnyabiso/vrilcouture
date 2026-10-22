@@ -148,18 +148,18 @@ export const ProductDetails = () => {
 
                     {/* LEFT: GALLERY */}
                     <div>
-                        <div className="relative aspect-square bg-[#F8F8F6] overflow-hidden">
+                        <div className="relative aspect-[3/4] bg-[#F8F8F6] overflow-hidden">
                             {activeMedia ? (
                                 activeMedia.media_type === 'image' ? (
                                     <img
                                         src={activeMedia.url}
                                         alt={product.name}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-contain"
                                     />
                                 ) : (
                                     <video
                                         src={activeMedia.url}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-contain"
                                         controls
                                         autoPlay
                                         muted
@@ -187,15 +187,15 @@ export const ProductDetails = () => {
                                     <button
                                         key={item.id}
                                         onClick={() => setActiveMediaIndex(i)}
-                                        className={`relative aspect-square bg-[#F8F8F6] overflow-hidden transition-all ${
+                                        className={`relative aspect-[3/4] bg-[#F8F8F6] overflow-hidden transition-all ${
                                             i === activeMediaIndex ? 'ring-1 ring-black' : 'opacity-50 hover:opacity-100'
                                         }`}
                                     >
                                         {item.media_type === 'image' ? (
-                                            <img src={item.url} alt="" className="w-full h-full object-cover" />
+                                            <img src={item.url} alt="" className="w-full h-full object-contain" />
                                         ) : (
                                             <>
-                                                <video src={item.url} className="w-full h-full object-cover" muted />
+                                                <video src={item.url} className="w-full h-full object-contain" muted />
                                                 <span className="absolute inset-0 flex items-center justify-center bg-black/20">
                                                     <Play className="w-4 h-4 text-white fill-white" />
                                                 </span>
