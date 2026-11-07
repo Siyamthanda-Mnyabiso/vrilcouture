@@ -2,6 +2,8 @@
 import type { RouteObject } from 'react-router-dom';
 import { RequireAdmin } from '../components/auth/RequireAdmin';
 import { AdminLayout } from '../components/layout/AdminLayout';
+import { featureFlags } from '../lib/featureFlags';
+import { Unavailable } from '../pages/Unavailable';
 import { Dashboard } from '../pages/admin/Dashboard';
 import { AdminProducts } from '../pages/admin/AdminProducts';
 import { AdminProductForm } from '../pages/admin/AdminProductForm';
@@ -9,11 +11,14 @@ import { AdminOrders } from '../pages/admin/AdminOrders';
 import { AdminCustomers } from '../pages/admin/AdminCustomers';
 import { AdminCategories } from '../pages/admin/AdminCategories';
 
-const withAdminLayout = (children: React.ReactNode) => (
-    <RequireAdmin>
-        <AdminLayout>{children}</AdminLayout>
-    </RequireAdmin>
-);
+const withAdminLayout = (children: React.ReactNode) =>
+    featureFlags.adminDisabled ? (
+        <Unavailable />
+    ) : (
+        <RequireAdmin>
+            <AdminLayout>{children}</AdminLayout>
+        </RequireAdmin>
+    );
 
 export const adminRoutes: RouteObject[] = [
     { path: 'admin', element: withAdminLayout(<Dashboard />) },

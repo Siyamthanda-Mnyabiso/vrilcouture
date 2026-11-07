@@ -9,6 +9,7 @@ import { useProducts } from '../../hooks/useProducts';
 import { useSearch } from '../../hooks/useSearch';
 import { AccountDropdown } from './AccountDropdown';
 import { MobileNav } from './MobileNav';
+import { featureFlags } from '../../lib/featureFlags';
 
 
 
@@ -697,6 +698,7 @@ export function Navbar() {
 
 
 
+                    {!featureFlags.checkoutDisabled && (
                     <Link
                         to="/cart"
                         className="relative"
@@ -731,6 +733,7 @@ export function Navbar() {
                         )}
 
                     </Link>
+                    )}
 
 
                 </div>

@@ -1,5 +1,7 @@
 // src/routes/store.routes.tsx
 import type { RouteObject } from 'react-router-dom';
+import { featureFlags } from '../lib/featureFlags';
+import { Unavailable } from '../pages/Unavailable';
 import { Home } from '../pages/store/Home';
 import { Shop } from '../pages/store/Shop';
 import { ProductDetails } from '../pages/store/ProductDetails';
@@ -11,6 +13,9 @@ import { About } from '../pages/store/About';
 import { Contact } from '../pages/store/Contact';
 import { Terms } from '../pages/store/Terms';
 import { ReturnPolicy } from '../pages/store/ReturnPolicy';
+
+const gateCheckout = (page: React.ReactElement) =>
+    featureFlags.checkoutDisabled ? <Unavailable /> : page;
 
 export const storeRoutes: RouteObject[] = [
     {
@@ -47,14 +52,14 @@ export const storeRoutes: RouteObject[] = [
     },
     {
         path: 'cart',
-        element: <Cart />,
+        element: gateCheckout(<Cart />),
     },
     {
         path: 'checkout',
-        element: <Checkout />,
+        element: gateCheckout(<Checkout />),
     },
     {
         path: 'order-success',
-        element: <OrderSuccess />,
+        element: gateCheckout(<OrderSuccess />),
     },
 ];

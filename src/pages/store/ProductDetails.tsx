@@ -5,6 +5,7 @@ import { ChevronUp, ChevronDown, Minus, Plus, Play, Truck, RotateCcw } from 'luc
 import { useProducts } from '../../hooks/useProducts';
 import { useCart } from '../../hooks/useCart';
 import { useProductVariants } from '../../hooks/useProductVariants';
+import { featureFlags } from '../../lib/featureFlags';
 
 export const ProductDetails = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -340,10 +341,12 @@ export const ProductDetails = () => {
 
                             <button
                                 onClick={handleAddToCart}
-                                disabled={!canAddToCart}
+                                disabled={!canAddToCart || featureFlags.checkoutDisabled}
                                 className="flex-1 h-12 bg-black text-white text-xs uppercase tracking-[0.3em] hover:bg-black/85 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-black"
                             >
-                                {justAdded
+                                {featureFlags.checkoutDisabled
+                                    ? 'Currently Unavailable'
+                                    : justAdded
                                     ? 'Added To Cart'
                                     : canAddToCart
                                         ? 'Add To Cart'
