@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User as UserIcon, Package, UserCog, MapPin, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { featureFlags } from '../../lib/featureFlags';
 
 export function AccountDropdown() {
     const { user, signOut } = useAuth();
@@ -71,7 +72,7 @@ export function AccountDropdown() {
                                 Addresses
                             </Link>
 
-                            {user.role === 'admin' && (
+                            {user.role === 'admin' && !featureFlags.adminDisabled && (
                                 <Link
                                     to="/admin"
                                     onClick={() => setOpen(false)}

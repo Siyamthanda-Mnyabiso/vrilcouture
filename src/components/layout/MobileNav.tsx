@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { featureFlags } from '../../lib/featureFlags';
 
 interface NavSection {
     title: string;
@@ -229,7 +230,7 @@ export const MobileNav = ({ isOpen, onClose, navigation, categories }: MobileNav
                                     <p className="text-black text-sm">
                                         Hello, {user.email}
                                     </p>
-                                    {user.role === 'admin' && (
+                                    {user.role === 'admin' && !featureFlags.adminDisabled && (
                                         <Link
                                             to="/admin/products"
                                             onClick={onClose}

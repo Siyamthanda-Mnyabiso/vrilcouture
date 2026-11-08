@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { ImageOff } from 'lucide-react';
 import type { Product } from '../../features/products/product.types';
 import { QuickAddModal } from './QuickAddModal';
+import { featureFlags } from '../../lib/featureFlags';
 
 interface ProductCardProps {
     product: Product;
@@ -32,6 +33,7 @@ export function ProductCard({ product }: ProductCardProps) {
                         </div>
                     )}
 
+                    {!featureFlags.checkoutDisabled && (
                     <button
                         type="button"
                         onClick={(e) => {
@@ -51,6 +53,7 @@ export function ProductCard({ product }: ProductCardProps) {
                     >
                         Add To Cart
                     </button>
+                    )}
                 </div>
 
                 <div className="pt-3">
