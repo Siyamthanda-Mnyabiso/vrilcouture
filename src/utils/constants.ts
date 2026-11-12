@@ -32,7 +32,7 @@ export const ADMIN_ROLE = 'admin';
 // Social profiles shown in the footer of every page. Paste the full profile
 // address (https://...) for each. A link only appears once its address is set.
 export const SOCIAL_LINKS = [
-    { label: 'Instagram', url: '' },
+    { label: 'Instagram', url: 'https://www.instagram.com/vril_couture/' },
     { label: 'TikTok', url: '' },
     { label: 'LinkedIn', url: '' },
 ];
