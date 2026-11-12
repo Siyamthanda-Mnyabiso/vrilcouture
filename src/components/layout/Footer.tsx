@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { SOCIAL_LINKS } from '../../utils/constants';
 import {
     Truck,
     CreditCard as PaymentCard,
@@ -178,7 +179,17 @@ export const Footer = () => {
                     </p>
 
                     <div className="flex gap-8 text-xs tracking-[0.3em] uppercase text-white/30">
-                        <Link to="#" className="hover:text-white">Instagram</Link>
+                        {SOCIAL_LINKS.filter((social) => social.url).map((social) => (
+                            <a
+                                key={social.label}
+                                href={social.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:text-white"
+                            >
+                                {social.label}
+                            </a>
+                        ))}
                         <Link to="/terms" className="hover:text-white">Terms</Link>
                         <Link to="/returns" className="hover:text-white">Returns</Link>
                     </div>

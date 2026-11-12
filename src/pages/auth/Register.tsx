@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { getSafeRedirect } from '../../utils/redirect';
 
 export const Register = () => {
     const navigate = useNavigate();
+    const { search } = useLocation();
+    const redirectTo = getSafeRedirect(search);
+    const loginLink = search ? `/login${search}` : '/login';
     const { signUp, user, loading: authLoading } = useAuth();
     const [formData, setFormData] = useState({
         email: '',
@@ -18,9 +22,9 @@ export const Register = () => {
 
     useEffect(() => {
         if (user) {
-            navigate('/');
+            navigate(redirectTo);
         }
-    }, [user, navigate]);
+    }, [user, navigate, redirectTo]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -47,7 +51,7 @@ export const Register = () => {
             await signUp(formData.email, formData.password, {
                 full_name: formData.fullName,
             });
-            navigate('/');
+            navigate(redirectTo);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create account');
         } finally {
@@ -128,7 +132,7 @@ export const Register = () => {
 
                     <p className="text-center text-sm text-gray-500">
                         Already have an account?{' '}
-                        <Link to="/login" className="text-black font-medium hover:opacity-60 transition-opacity">
+                        <Link to={loginLink} className="text-black font-medium hover:opacity-60 transition-opacity">
                             Sign in
                         </Link>
                     </p>

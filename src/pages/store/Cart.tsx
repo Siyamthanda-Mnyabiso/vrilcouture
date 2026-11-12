@@ -1,6 +1,7 @@
 // src/pages/store/Cart.tsx
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
+import { useAuth } from '../../hooks/useAuth';
 import { CartItem } from '../../components/cart/CartItem';
 import { CartSummary } from '../../components/cart/CartSummary';
 import { Button } from '../../components/ui/Button';
@@ -8,11 +9,47 @@ import { Button } from '../../components/ui/Button';
 export const Cart = () => {
     const navigate = useNavigate();
     const { items, subtotal, itemCount, clearCart, updateQuantity, removeItem } = useCart();
+    const { user, loading: authLoading } = useAuth();
 
 
     const shipping = subtotal >= 1000 ? 0 : 100;
     const total = subtotal  + shipping;
 
+    // Wait for the sign-in check so a logged-in customer never sees a flash of the message.
+    if (authLoading) {
+        return <main className="min-h-[60vh] bg-[#FAFAF8]" />;
+    }
+
+    if (!user) {
+        return (
+            <main className="min-h-[60vh] py-16 md:py-24 bg-[#FAFAF8]">
+                <div className="max-w-[1440px] mx-auto px-6">
+                    <div className="flex flex-col items-center justify-center text-center">
+                        <h1 className="text-4xl md:text-5xl font-display uppercase tracking-tight font-light text-black mb-4">
+                            Your Cart
+                        </h1>
+                        <div className="w-12 h-0.5 bg-black mb-8" />
+
+                        <p className="text-black uppercase tracking-[0.2em] text-sm mb-3">
+                            Log in to access your cart
+                        </p>
+                        <p className="text-black/60 text-sm max-w-md mb-8">
+                            Please log in or create an account to view your cart and check out.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Button onClick={() => navigate('/login?redirect=/cart')}>
+                                Log In
+                            </Button>
+                            <Button variant="outline" onClick={() => navigate('/register?redirect=/cart')}>
+                                Create Account
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        );
+    }
 
     if (items.length === 0) {
         return (
