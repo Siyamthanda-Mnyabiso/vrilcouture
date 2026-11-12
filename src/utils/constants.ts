@@ -33,8 +33,8 @@ export const ADMIN_ROLE = 'admin';
 // address (https://...) for each. A link only appears once its address is set.
 export const SOCIAL_LINKS = [
     { label: 'Instagram', url: 'https://www.instagram.com/vril_couture/' },
-    { label: 'TikTok', url: '' },
-    { label: 'LinkedIn', url: '' },
+    { label: 'TikTok', url: 'https://www.tiktok.com/@vril.couture' },
+    { label: 'LinkedIn', url: 'https://www.linkedin.com/company/vril-couture/' },
 ];
 
 // Yoco — only the PUBLIC key belongs on the client.
