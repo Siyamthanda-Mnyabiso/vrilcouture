@@ -12,6 +12,8 @@ type FetchProductsParams = {
     limit?: number;
     sortBy?: 'newest' | 'price-low' | 'price-high' | 'popular';
     category?: string;
+    /** Only products Vril Couture has chosen for the New In page. */
+    newInOnly?: boolean;
 };
 
 export function useProducts() {
@@ -28,6 +30,10 @@ export function useProducts() {
 
             if (params?.category) {
                 query = query.eq('category_id', params.category);
+            }
+
+            if (params?.newInOnly) {
+                query = query.eq('is_new', true);
             }
 
             if (params?.sortBy === 'newest') {
@@ -91,6 +97,9 @@ export function useProducts() {
                 brand: input.brand ?? null,
                 sku: input.sku ?? null,
                 stock: input.stock ?? 0,
+                // Only sent when ticked, so saving products keeps working even
+                // before the is_new column exists in the database.
+                ...(input.is_new ? { is_new: true } : {}),
             })
             .select()
             .single();

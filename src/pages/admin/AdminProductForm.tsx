@@ -46,6 +46,7 @@ export const AdminProductForm = () => {
     const [brand, setBrand] = useState('');
     const [stock, setStock] = useState('0');
     const [categoryId, setCategoryId] = useState('');
+    const [isNew, setIsNew] = useState(false);
     const [existingMedia, setExistingMedia] = useState<ProductMedia[]>([]);
     const [newFiles, setNewFiles] = useState<File[]>([]);
     const [submitting, setSubmitting] = useState(false);
@@ -79,6 +80,7 @@ export const AdminProductForm = () => {
         setBrand(currentProduct.brand ?? '');
         setStock(String(currentProduct.stock));
         setCategoryId(currentProduct.category_id ?? '');
+        setIsNew(Boolean(currentProduct.is_new));
         setExistingMedia(currentProduct.media ?? []);
     }
 
@@ -176,6 +178,15 @@ export const AdminProductForm = () => {
                 brand: brand || undefined,
                 stock: parseInt(stock, 10) || 0,
                 category_id: categoryId || undefined,
+                // Only included when it changed (or when ticking on a new product),
+                // so every other product edit is unaffected.
+                ...(isEditing
+                    ? isNew !== Boolean(currentProduct?.is_new)
+                        ? { is_new: isNew }
+                        : {}
+                    : isNew
+                        ? { is_new: true }
+                        : {}),
             };
 
             let productId = id;
@@ -273,6 +284,21 @@ export const AdminProductForm = () => {
                         <Input value={brand} onChange={(e) => setBrand(e.target.value)} />
                     </div>
                 </div>
+
+                <label className="flex items-center gap-3 border rounded-md p-3 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        checked={isNew}
+                        onChange={(e) => setIsNew(e.target.checked)}
+                        className="h-4 w-4"
+                    />
+                    <span className="text-sm">
+                        <span className="font-medium">Show on the New In page</span>
+                        <span className="block text-xs text-gray-400">
+                            Tick this to feature the product on the New In page.
+                        </span>
+                    </span>
+                </label>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>

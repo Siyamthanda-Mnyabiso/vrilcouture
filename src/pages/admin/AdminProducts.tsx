@@ -1,5 +1,5 @@
 // src/pages/admin/AdminProducts.tsx
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../../hooks/useProducts';
 import { Button } from '../../components/ui/Button';
@@ -7,7 +7,17 @@ import { Loader } from '../../components/ui/Loader';
 import { formatCurrency } from '../../utils/currency';
 
 export const AdminProducts = () => {
-    const { products, loading, error, fetchProducts, deleteProduct } = useProducts();
+    const { products, loading, error, fetchProducts, deleteProduct, updateProduct } = useProducts();
+    const [actionError, setActionError] = useState<string | null>(null);
+
+    const toggleNewIn = async (id: string, makeNew: boolean) => {
+        setActionError(null);
+        try {
+            await updateProduct(id, { is_new: makeNew });
+        } catch (err) {
+            setActionError(err instanceof Error ? err.message : 'Could not update New In');
+        }
+    };
 
     useEffect(() => {
         fetchProducts({ sortBy: 'newest' });
@@ -30,6 +40,7 @@ export const AdminProducts = () => {
             </div>
 
             {error && <p className="text-red-600 mb-4">{error}</p>}
+            {actionError && <p className="text-red-600 mb-4">{actionError}</p>}
 
             <div className="overflow-x-auto border rounded-lg">
                 <table className="w-full text-sm">
@@ -40,6 +51,7 @@ export const AdminProducts = () => {
                         <th className="p-3">SKU</th>
                         <th className="p-3">Price</th>
                         <th className="p-3">Stock</th>
+                        <th className="p-3">New In</th>
                         <th className="p-3" />
                     </tr>
                     </thead>
@@ -57,6 +69,15 @@ export const AdminProducts = () => {
                             <td className="p-3 text-gray-500">{p.sku ?? '—'}</td>
                             <td className="p-3">{formatCurrency(p.price)}</td>
                             <td className="p-3">{p.stock}</td>
+                            <td className="p-3">
+                                <input
+                                    type="checkbox"
+                                    checked={Boolean(p.is_new)}
+                                    onChange={(e) => toggleNewIn(p.id, e.target.checked)}
+                                    aria-label={`Show ${p.name} on the New In page`}
+                                    className="h-4 w-4 cursor-pointer"
+                                />
+                            </td>
                             <td className="p-3 text-right space-x-2">
                                 <Link to={`/admin/products/${p.id}/edit`} className="text-blue-600 hover:underline">
                                     Edit
@@ -72,7 +93,7 @@ export const AdminProducts = () => {
                     ))}
                     {products.length === 0 && (
                         <tr>
-                            <td colSpan={6} className="p-6 text-center text-gray-500">
+                            <td colSpan={7} className="p-6 text-center text-gray-500">
                                 No products yet.
                             </td>
                         </tr>
