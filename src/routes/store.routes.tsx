@@ -4,6 +4,7 @@ import { featureFlags } from '../lib/featureFlags';
 import { Unavailable } from '../pages/Unavailable';
 import { Home } from '../pages/store/Home';
 import { Shop } from '../pages/store/Shop';
+import { NewIn } from '../pages/store/NewIn';
 import { ProductDetails } from '../pages/store/ProductDetails';
 import { CategoryDetails } from '../pages/store/CategoryDetails';
 import { Cart } from '../pages/store/Cart';
@@ -25,6 +26,10 @@ export const storeRoutes: RouteObject[] = [
     {
         path: 'shop',
         element: <Shop />,
+    },
+    {
+        path: 'new-in',
+        element: <NewIn />,
     },
     {
         path: 'about',

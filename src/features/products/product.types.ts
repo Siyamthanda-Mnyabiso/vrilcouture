@@ -9,6 +9,7 @@ export interface Product {
     brand: string | null;
     sku: string | null;
     stock: number;
+    is_new?: boolean;
     created_at: string;
     updated_at: string;
     media?: ProductMedia[];
@@ -33,6 +34,7 @@ export interface CreateProductInput {
     brand?: string;
     sku?: string;
     stock: number;
+    is_new?: boolean;
 }
 
 export type UpdateProductInput = Partial<CreateProductInput>;

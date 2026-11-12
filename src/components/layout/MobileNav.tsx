@@ -34,6 +34,7 @@ export const MobileNav = ({ isOpen, onClose, navigation, categories }: MobileNav
         { label: 'Home', path: '/' },
         { label: 'About', path: '/about' },
         { label: 'Shop', path: '/shop' },
+        { label: 'New In', path: '/new-in' },
         { label: 'Contact', path: '/contact' },
     ];
 

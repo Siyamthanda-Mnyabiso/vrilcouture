@@ -35,7 +35,7 @@ const ACCOUNT_LINKS = [
     { label: 'Order Tracking', to: '/account/orders' },
     { label: 'Shopping Cart', to: '/cart' },
 ];
-const SHOP_LINKS = [{ label: 'New In', to: '/shop' }];
+const SHOP_LINKS = [{ label: 'New In', to: '/new-in' }];
 
 const PAYMENT_METHODS = [
     { label: 'Visa', logo: '/payments/visa.webp' },

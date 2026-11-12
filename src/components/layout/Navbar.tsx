@@ -467,6 +467,18 @@ export function Navbar() {
                                             SHOP ALL
                                         </Link>
 
+                                        <Link
+                                            to="/new-in"
+                                            onClick={() => setShopOpen(false)}
+                                            className="
+                                        uppercase
+                                        text-xs
+                                        tracking-[0.3em]
+                                        "
+                                        >
+                                            NEW IN
+                                        </Link>
+
 
 
 
