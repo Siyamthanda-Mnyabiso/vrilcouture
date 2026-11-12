@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
@@ -15,9 +17,15 @@ export const Input = ({
                           iconPosition = 'left',
                           className = '',
                           id,
+                          type,
                           ...props
                       }: InputProps) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+
+    // Every password field gets a show/hide toggle, hidden by default.
+    const isPassword = type === 'password';
+    const [showPassword, setShowPassword] = useState(false);
+    const inputType = isPassword && showPassword ? 'text' : type;
 
     const baseStyles = `
     w-full px-4 py-3 bg-white border rounded-none
@@ -26,7 +34,7 @@ export const Input = ({
     transition-all duration-200
     ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-black'}
     ${icon && iconPosition === 'left' ? 'pl-11' : ''}
-    ${icon && iconPosition === 'right' ? 'pr-11' : ''}
+    ${(icon && iconPosition === 'right') || isPassword ? 'pr-11' : ''}
   `;
 
     return (
@@ -47,13 +55,25 @@ export const Input = ({
                 )}
                 <input
                     id={inputId}
+                    type={inputType}
                     className={baseStyles}
                     {...props}
                 />
-                {icon && iconPosition === 'right' && (
+                {icon && iconPosition === 'right' && !isPassword && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
             {icon}
           </span>
+                )}
+                {isPassword && (
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        aria-pressed={showPassword}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-black/60 hover:text-black transition-colors"
+                    >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                 )}
             </div>
             {error && (
