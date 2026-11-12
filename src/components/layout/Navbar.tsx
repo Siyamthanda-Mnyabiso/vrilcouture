@@ -1,7 +1,7 @@
 // src/components/layout/Navbar.tsx
 
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, ShoppingBag, Menu, ChevronDown, X, ImageOff } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { useCategories } from '../../hooks/useCategories';
@@ -58,11 +58,19 @@ export function Navbar() {
     const { products: megaMenuProducts, fetchProducts: fetchMegaMenuProducts } = useProducts();
 
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [shopOpen, setShopOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Close the Shop menu whenever the page changes, so it never covers the new page.
+    const [lastPath, setLastPath] = useState(location.pathname);
+    if (lastPath !== location.pathname) {
+        setLastPath(location.pathname);
+        setShopOpen(false);
+    }
 
     const searchInputRef = useRef<HTMLInputElement>(null);
     const searchWrapperRef = useRef<HTMLDivElement>(null);
