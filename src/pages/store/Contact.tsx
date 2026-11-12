@@ -2,30 +2,56 @@
 import { useState } from 'react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../../utils/constants';
 
 const CONTACT_EMAIL = 'admin@vrilcouture.co.za';
 
+type Status = 'idle' | 'sending' | 'success' | 'error';
+
+const EMPTY_FORM = { name: '', email: '', subject: '', message: '', website: '' };
+
 export const Contact = () => {
-    const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+    const [form, setForm] = useState(EMPTY_FORM);
+    const [status, setStatus] = useState<Status>('idle');
+    const [errorMessage, setErrorMessage] = useState('');
 
     const handleChange = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setForm((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (status === 'sending') return;
 
-        const subject = encodeURIComponent(form.subject || `Message from ${form.name || 'website visitor'}`);
-        const bodyLines = [
-            form.message,
-            '',
-            '---',
-            form.name ? `From: ${form.name}` : '',
-            form.email ? `Email: ${form.email}` : '',
-        ].filter(Boolean);
-        const body = encodeURIComponent(bodyLines.join('\n'));
+        setStatus('sending');
+        setErrorMessage('');
 
-        window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+        try {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/contact-form`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify(form),
+            });
+
+            const result = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                setErrorMessage(
+                    result?.error || 'Your message could not be sent. Please try again.'
+                );
+                setStatus('error');
+                return;
+            }
+
+            setForm(EMPTY_FORM);
+            setStatus('success');
+        } catch {
+            setErrorMessage('Your message could not be sent. Please check your connection and try again.');
+            setStatus('error');
+        }
     };
 
     return (
@@ -41,39 +67,96 @@ export const Contact = () => {
             </section>
 
             <section className="px-6 md:px-12 py-16 md:py-24 grid md:grid-cols-2 gap-16">
-                <form onSubmit={handleSubmit} className="space-y-5 max-w-md">
-                    <Input
-                        label="Name"
-                        value={form.name}
-                        onChange={handleChange('name')}
-                        required
-                    />
-                    <Input
-                        label="Email"
-                        type="email"
-                        value={form.email}
-                        onChange={handleChange('email')}
-                        required
-                    />
-                    <Input
-                        label="Subject"
-                        value={form.subject}
-                        onChange={handleChange('subject')}
-                    />
-                    <div>
-                        <label className="block text-sm font-medium text-black mb-2">Message</label>
-                        <textarea
-                            value={form.message}
-                            onChange={handleChange('message')}
-                            required
-                            rows={6}
-                            className="w-full px-4 py-3 bg-white border border-black rounded-none text-black placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all duration-200"
-                        />
+                {status === 'success' ? (
+                    <div
+                        role="status"
+                        aria-live="polite"
+                        className="max-w-md border border-black p-8"
+                    >
+                        <h2 className="font-display text-2xl uppercase tracking-tight mb-3">
+                            Message sent
+                        </h2>
+                        <p className="text-black/70 text-sm mb-6">
+                            Thank you for getting in touch. We have received your message and
+                            will get back to you soon.
+                        </p>
+                        <Button variant="outline" onClick={() => setStatus('idle')}>
+                            Send another message
+                        </Button>
                     </div>
-                    <Button type="submit" fullWidth>
-                        Send Message
-                    </Button>
-                </form>
+                ) : (
+                    <form onSubmit={handleSubmit} className="space-y-5 max-w-md">
+                        <Input
+                            label="Name"
+                            value={form.name}
+                            onChange={handleChange('name')}
+                            maxLength={100}
+                            required
+                            disabled={status === 'sending'}
+                        />
+                        <Input
+                            label="Email"
+                            type="email"
+                            value={form.email}
+                            onChange={handleChange('email')}
+                            maxLength={254}
+                            required
+                            disabled={status === 'sending'}
+                        />
+                        <Input
+                            label="Subject"
+                            value={form.subject}
+                            onChange={handleChange('subject')}
+                            maxLength={150}
+                            disabled={status === 'sending'}
+                        />
+                        <div>
+                            <label htmlFor="contact-message" className="block text-sm font-medium text-black mb-2">
+                                Message
+                            </label>
+                            <textarea
+                                id="contact-message"
+                                value={form.message}
+                                onChange={handleChange('message')}
+                                required
+                                maxLength={5000}
+                                rows={6}
+                                disabled={status === 'sending'}
+                                className="w-full px-4 py-3 bg-white border border-black rounded-none text-black placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all duration-200"
+                            />
+                        </div>
+
+                        {/* Spam trap: hidden from people, bots tend to fill it in. */}
+                        <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+                            <label>
+                                Website
+                                <input
+                                    type="text"
+                                    name="website"
+                                    tabIndex={-1}
+                                    autoComplete="off"
+                                    value={form.website}
+                                    onChange={handleChange('website')}
+                                />
+                            </label>
+                        </div>
+
+                        {status === 'error' && (
+                            <p role="alert" className="text-sm text-red-600">
+                                {errorMessage}
+                            </p>
+                        )}
+
+                        <Button
+                            type="submit"
+                            fullWidth
+                            isLoading={status === 'sending'}
+                            disabled={status === 'sending'}
+                        >
+                            {status === 'sending' ? 'Sending…' : 'Send Message'}
+                        </Button>
+                    </form>
+                )}
 
                 <div>
                     <h2 className="font-display text-xl uppercase tracking-tight mb-4">
