@@ -37,12 +37,6 @@ export const SOCIAL_LINKS = [
     { label: 'LinkedIn', url: '' },
 ];
 
-// Yoco — only the PUBLIC key belongs on the client.
-// The secret key and webhook secret must live ONLY as server-side env vars
-// (e.g. Supabase Edge Function secrets, set via `supabase secrets set`),
-// never prefixed with VITE_, and never imported into client code.
-export const YOCO_PUBLIC_KEY = import.meta.env.VITE_YOCO_PUBLIC_KEY || '';
-
 // Supabase — only the URL and ANON key belong on the client.
 // The service role key must NEVER be referenced here. It bypasses RLS
 // entirely; if it's prefixed VITE_, it ships straight to every browser.
