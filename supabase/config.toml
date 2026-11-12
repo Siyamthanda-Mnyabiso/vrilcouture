@@ -397,6 +397,11 @@ verify_jwt = false
 [functions.stitch-webhook]
 verify_jwt = false
 
+# contact-form is the public website contact form. Visitors are not signed in,
+# so there is no JWT; the function validates input, blocks bots and rate limits.
+[functions.contact-form]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
