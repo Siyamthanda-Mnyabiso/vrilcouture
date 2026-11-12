@@ -51,6 +51,7 @@ function escapeHtml(value: string) {
 
 // Single-line fields: no line breaks (blocks header injection) or control characters.
 function oneLine(value: unknown, max: number) {
+  // eslint-disable-next-line no-control-regex -- stripping control characters is the point
   return String(value ?? '').replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, max)
 }
 
@@ -91,6 +92,7 @@ serve(async (req) => {
   const name = oneLine(payload.name, MAX.name)
   const email = oneLine(payload.email, MAX.email)
   const subject = oneLine(payload.subject, MAX.subject)
+  // eslint-disable-next-line no-control-regex -- strip NUL characters
   const message = String(payload.message ?? '').replace(/\u0000/g, '').trim().slice(0, MAX.message)
 
   if (!name) return json(req, { error: 'Please enter your name.' }, 400)
