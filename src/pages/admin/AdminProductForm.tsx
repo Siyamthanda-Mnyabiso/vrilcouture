@@ -28,6 +28,7 @@ export const AdminProductForm = () => {
         updateProduct,
         addProductMedia,
         deleteProductMedia,
+        reorderProductMedia,
     } = useProducts();
     const { categories, fetchCategories } = useCategories();
     const {
@@ -48,6 +49,7 @@ export const AdminProductForm = () => {
     const [categoryId, setCategoryId] = useState('');
     const [isNew, setIsNew] = useState(false);
     const [existingMedia, setExistingMedia] = useState<ProductMedia[]>([]);
+    const [mediaReordered, setMediaReordered] = useState(false);
     const [newFiles, setNewFiles] = useState<File[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -92,6 +94,18 @@ export const AdminProductForm = () => {
     const handleRemoveExistingMedia = async (mediaId: string) => {
         await deleteProductMedia(mediaId);
         setExistingMedia((prev) => prev.filter((m) => m.id !== mediaId));
+    };
+
+    // Moves a picture one place left (-1) or right (+1). Saved when the form is saved.
+    const handleMoveMedia = (index: number, direction: -1 | 1) => {
+        const target = index + direction;
+        if (target < 0 || target >= existingMedia.length) return;
+        setExistingMedia((prev) => {
+            const next = [...prev];
+            [next[index], next[target]] = [next[target], next[index]];
+            return next;
+        });
+        setMediaReordered(true);
     };
 
     const validateNewVariant = (existingPairs: { size: string; color: string }[]) => {
@@ -196,6 +210,15 @@ export const AdminProductForm = () => {
             } else {
                 const created = await createProduct(input);
                 productId = created.id;
+            }
+
+            if (isEditing && productId && mediaReordered) {
+                await reorderProductMedia(existingMedia.map((m) => m.id));
+                // The first image is the product's main picture in the shop, cart and search.
+                const firstImage = existingMedia.find((m) => m.media_type === 'image');
+                if (firstImage && firstImage.url !== currentProduct?.image_url) {
+                    await updateProduct(productId, { image_url: firstImage.url });
+                }
             }
 
             if (newFiles.length > 0 && productId) {
@@ -336,20 +359,48 @@ export const AdminProductForm = () => {
 
                     {existingMedia.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-3">
-                            {existingMedia.map((m) => (
-                                <div key={m.id} className="relative w-20 h-20">
-                                    {m.media_type === 'image' ? (
-                                        <img src={m.url} className="w-20 h-20 object-cover rounded" />
-                                    ) : (
-                                        <video src={m.url} className="w-20 h-20 object-cover rounded" />
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveExistingMedia(m.id)}
-                                        className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 text-xs"
-                                    >
-                                        ×
-                                    </button>
+                            {existingMedia.map((m, index) => (
+                                <div key={m.id} className="flex flex-col items-center gap-1">
+                                    <div className="relative w-20 h-20">
+                                        {m.media_type === 'image' ? (
+                                            <img src={m.url} className="w-20 h-20 object-cover rounded" />
+                                        ) : (
+                                            <video src={m.url} className="w-20 h-20 object-cover rounded" />
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveExistingMedia(m.id)}
+                                            className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 text-xs"
+                                            aria-label="Remove this file"
+                                        >
+                                            ×
+                                        </button>
+                                        {index === 0 && (
+                                            <span className="absolute bottom-0 left-0 bg-black text-white text-[10px] px-1">
+                                                Main
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleMoveMedia(index, -1)}
+                                            disabled={index === 0}
+                                            aria-label={`Move file ${index + 1} earlier`}
+                                            className="border rounded w-8 h-7 text-sm disabled:opacity-30"
+                                        >
+                                            ←
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleMoveMedia(index, 1)}
+                                            disabled={index === existingMedia.length - 1}
+                                            aria-label={`Move file ${index + 1} later`}
+                                            className="border rounded w-8 h-7 text-sm disabled:opacity-30"
+                                        >
+                                            →
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>

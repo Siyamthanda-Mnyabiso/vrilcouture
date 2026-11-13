@@ -166,6 +166,17 @@ export function useProducts() {
         if (deleteError) throw deleteError;
     };
 
+    // Saves the order of a product's media: position in the list becomes sort_order.
+    const reorderProductMedia = async (orderedIds: string[]) => {
+        for (let i = 0; i < orderedIds.length; i++) {
+            const { error: updateError } = await supabase
+                .from('product_media')
+                .update({ sort_order: i })
+                .eq('id', orderedIds[i]);
+            if (updateError) throw updateError;
+        }
+    };
+
     return {
         products,
         currentProduct,
@@ -178,5 +189,6 @@ export function useProducts() {
         deleteProduct,
         addProductMedia,
         deleteProductMedia,
+        reorderProductMedia,
     };
 }
