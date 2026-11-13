@@ -246,7 +246,7 @@ export const ProductDetails = () => {
                                     )}
                                 </button>
                                 {descriptionOpen && (
-                                    <p className="px-5 pb-4 text-sm text-black/60 leading-relaxed">
+                                    <p className="px-5 pb-4 text-sm text-black/60 leading-relaxed whitespace-pre-line">
                                         {product.description}
                                     </p>
                                 )}
