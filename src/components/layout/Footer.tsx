@@ -178,7 +178,7 @@ export const Footer = () => {
                         © {currentYear} Vril Couture. Made with care.
                     </p>
 
-                    <div className="flex gap-8 text-xs tracking-[0.3em] uppercase text-white/30">
+                    <div className="flex flex-wrap gap-x-8 gap-y-3 text-xs tracking-[0.3em] uppercase text-white/30">
                         {SOCIAL_LINKS.filter((social) => social.url).map((social) => (
                             <a
                                 key={social.label}
