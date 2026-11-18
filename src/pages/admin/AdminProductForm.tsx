@@ -50,6 +50,9 @@ export const AdminProductForm = () => {
     const [isNew, setIsNew] = useState(false);
     const [existingMedia, setExistingMedia] = useState<ProductMedia[]>([]);
     const [mediaReordered, setMediaReordered] = useState(false);
+    // True when the first (main) file was removed in this edit, so pictures added
+    // in the same save take its place instead of going to the end.
+    const [mainRemoved, setMainRemoved] = useState(false);
     const [newFiles, setNewFiles] = useState<File[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -92,6 +95,7 @@ export const AdminProductForm = () => {
     };
 
     const handleRemoveExistingMedia = async (mediaId: string) => {
+        if (existingMedia[0]?.id === mediaId) setMainRemoved(true);
         await deleteProductMedia(mediaId);
         setExistingMedia((prev) => prev.filter((m) => m.id !== mediaId));
     };
@@ -232,6 +236,11 @@ export const AdminProductForm = () => {
                 const inserted = await addProductMedia(productId, mediaRows);
                 addedMedia = inserted;
 
+                if (isEditing && mainRemoved) {
+                    // The main picture was replaced: the new pictures go first.
+                    await reorderProductMedia([...inserted, ...existingMedia].map((m) => m.id));
+                }
+
                 const firstImage = inserted.find((m) => m.media_type === 'image');
                 if (firstImage && !isEditing) {
                     await updateProduct(productId, { image_url: firstImage.url });
@@ -242,7 +251,10 @@ export const AdminProductForm = () => {
             // cart. Keep it in step with the gallery after pictures are added,
             // removed or reordered.
             if (isEditing && productId) {
-                const mainImage = [...existingMedia, ...addedMedia].find(
+                const ordered = mainRemoved
+                    ? [...addedMedia, ...existingMedia]
+                    : [...existingMedia, ...addedMedia];
+                const mainImage = ordered.find(
                     (m) => m.media_type === 'image'
                 );
                 if (mainImage && mainImage.url !== currentProduct?.image_url) {
