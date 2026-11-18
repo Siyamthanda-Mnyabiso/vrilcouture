@@ -214,12 +214,9 @@ export const AdminProductForm = () => {
 
             if (isEditing && productId && mediaReordered) {
                 await reorderProductMedia(existingMedia.map((m) => m.id));
-                // The first image is the product's main picture in the shop, cart and search.
-                const firstImage = existingMedia.find((m) => m.media_type === 'image');
-                if (firstImage && firstImage.url !== currentProduct?.image_url) {
-                    await updateProduct(productId, { image_url: firstImage.url });
-                }
             }
+
+            let addedMedia: ProductMedia[] = [];
 
             if (newFiles.length > 0 && productId) {
                 const uploaded = await Promise.all(
@@ -233,10 +230,23 @@ export const AdminProductForm = () => {
                 }));
 
                 const inserted = await addProductMedia(productId, mediaRows);
+                addedMedia = inserted;
 
                 const firstImage = inserted.find((m) => m.media_type === 'image');
                 if (firstImage && !isEditing) {
                     await updateProduct(productId, { image_url: firstImage.url });
+                }
+            }
+
+            // The first image is the product's main picture in the shop, search and
+            // cart. Keep it in step with the gallery after pictures are added,
+            // removed or reordered.
+            if (isEditing && productId) {
+                const mainImage = [...existingMedia, ...addedMedia].find(
+                    (m) => m.media_type === 'image'
+                );
+                if (mainImage && mainImage.url !== currentProduct?.image_url) {
+                    await updateProduct(productId, { image_url: mainImage.url });
                 }
             }
 
