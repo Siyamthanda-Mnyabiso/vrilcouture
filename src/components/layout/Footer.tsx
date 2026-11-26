@@ -192,6 +192,7 @@ export const Footer = () => {
                         ))}
                         <Link to="/terms" className="hover:text-white">Terms</Link>
                         <Link to="/returns" className="hover:text-white">Returns</Link>
+                        <Link to="/privacy" className="hover:text-white">Privacy</Link>
                     </div>
 
                 </div>

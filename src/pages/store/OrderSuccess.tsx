@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
 import { supabase } from '../../lib/supabase';
+import { trackPurchase } from '../../lib/analytics';
 
 // Stitch redirects here regardless of whether the payment actually succeeded,
 // so this page has to check the order's real status before claiming anything
@@ -79,6 +80,8 @@ export const OrderSuccess = () => {
 
     useEffect(() => {
         if (pageState !== 'paid' || !orderId) return;
+
+        trackPurchase(orderId).catch((err) => console.error('Purchase tracking failed', err));
 
         const cartClearedKey = `cart_cleared_${orderId}`;
         if (!sessionStorage.getItem(cartClearedKey)) {

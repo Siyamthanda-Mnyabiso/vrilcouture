@@ -3,6 +3,7 @@ import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { SplashScreen } from './components/layout/SplashScreen';
 import { ScrollToTop } from './components/layout/ScrollToTop';
+import { CookieNotice } from './components/layout/CookieNotice';
 import {TopAnnouncementBar} from "./components/layout/TopAnnouncementBar.tsx";
 import { Analytics } from '@vercel/analytics/react';
 
@@ -20,6 +21,7 @@ export const App = () => {
             </main>
 
             <Footer />
+            <CookieNotice />
             <Analytics />
         </div>
     );

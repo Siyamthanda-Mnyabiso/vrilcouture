@@ -14,6 +14,7 @@ import { About } from '../pages/store/About';
 import { Contact } from '../pages/store/Contact';
 import { Terms } from '../pages/store/Terms';
 import { ReturnPolicy } from '../pages/store/ReturnPolicy';
+import { Privacy } from '../pages/store/Privacy';
 
 const gateCheckout = (page: React.ReactElement) =>
     featureFlags.checkoutDisabled ? <Unavailable /> : page;
@@ -46,6 +47,10 @@ export const storeRoutes: RouteObject[] = [
     {
         path: 'returns',
         element: <ReturnPolicy />,
+    },
+    {
+        path: 'privacy',
+        element: <Privacy />,
     },
     {
         path: 'product/:slug',
