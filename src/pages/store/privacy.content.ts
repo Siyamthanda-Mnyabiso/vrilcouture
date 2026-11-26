@@ -141,6 +141,7 @@ export const SECTIONS: PolicySection[] = [
             subheading('Third-party cookies'),
             text('Certain cookies may be placed by external service providers that support our website, analytics, advertising or e-commerce functionality.'),
             text('Where required by law, we will obtain your consent before using non-essential cookies or tracking technologies.'),
+            text('If you decline, Google still receives limited information that does not use cookies, which helps us estimate visits and sales.'),
             text("You may manage your cookie preferences through your browser settings or through our website's cookie preference controls, where available."),
             text('Disabling certain cookies may affect your ability to access some website features.'),
         ],
