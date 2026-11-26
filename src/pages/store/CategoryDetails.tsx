@@ -1,15 +1,19 @@
 // src/pages/store/CategoryDetails.tsx
 
 import { useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useCategories } from '../../hooks/useCategories';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductGrid } from '../../components/product/ProductGrid';
 import type { Category } from '../../types/category';
+import { GENDER_LABELS, isGender } from '../../utils/gender';
 
 export const CategoryDetails = () => {
 
     const { slug } = useParams<{ slug: string }>();
+    const [searchParams] = useSearchParams();
+    const genderParam = searchParams.get('gender');
+    const gender = isGender(genderParam) ? genderParam : undefined;
 
     const { categories, loading: categoriesLoading, fetchCategories } = useCategories();
 
@@ -27,10 +31,11 @@ export const CategoryDetails = () => {
     useEffect(() => {
         if (category) {
             fetchProducts({
-                category: category.id
+                category: category.id,
+                gender
             });
         }
-    }, [category, fetchProducts]);
+    }, [category, gender, fetchProducts]);
 
 
 
@@ -142,7 +147,7 @@ export const CategoryDetails = () => {
                     mb-4
                     ">
 
-                        Vril Collection
+                        {gender ? GENDER_LABELS[gender] : 'Vril Collection'}
 
                     </p>
 

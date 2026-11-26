@@ -11,12 +11,14 @@ import { AccountDropdown } from './AccountDropdown';
 import { MobileNav } from './MobileNav';
 import { HeaderPlayer, MobilePlayerBar } from './MusicPlayer';
 import { featureFlags } from '../../lib/featureFlags';
+import { categoryPath, type Gender } from '../../utils/gender';
 
 
 
-const navigation = [
+const navigation: { title: string; gender?: Gender; items: string[] }[] = [
     {
         title: "MEN",
+        gender: "men",
         items: [
             "T Shirts",
             "Hoodies & Sweaters",
@@ -27,7 +29,9 @@ const navigation = [
     },
     {
         title: "WOMEN",
+        gender: "women",
         items: [
+            "T Shirts",
             "Dresses",
             "Tops",
             "Sweaters & Knits",
@@ -67,9 +71,11 @@ export function Navbar() {
     const [searchQuery, setSearchQuery] = useState('');
 
     // Close the Shop menu whenever the page changes, so it never covers the new page.
-    const [lastPath, setLastPath] = useState(location.pathname);
-    if (lastPath !== location.pathname) {
-        setLastPath(location.pathname);
+    const [lastPath, setLastPath] = useState(location.pathname + location.search);
+    // (The query counts too: Men and Women links differ only by it.)
+    const currentPath = location.pathname + location.search;
+    if (lastPath !== currentPath) {
+        setLastPath(currentPath);
         setShopOpen(false);
     }
 
@@ -297,7 +303,7 @@ export function Navbar() {
 
                                                         <Link
                                                             key={item}
-                                                            to={`/category/${item.toLowerCase().replaceAll(" ","-")}`}
+                                                            to={categoryPath(item, section.gender)}
                                                             className="
                                                     block
                                                     text-sm

@@ -7,6 +7,7 @@ import type {
     UpdateProductInput,
     ProductMedia,
 } from '../features/products/product.types';
+import { matchesGender, type Gender } from '../utils/gender';
 
 type FetchProductsParams = {
     limit?: number;
@@ -14,6 +15,8 @@ type FetchProductsParams = {
     category?: string;
     /** Only products Vril Couture has chosen for the New In page. */
     newInOnly?: boolean;
+    /** Limit to what belongs in the Men or Women section. */
+    gender?: Gender;
 };
 
 export function useProducts() {
@@ -50,7 +53,14 @@ export function useProducts() {
 
             const { data, error: fetchError } = await query;
             if (fetchError) throw fetchError;
-            setProducts(data ?? []);
+            // Filtered here rather than in the query, so listings keep working
+            // even before the gender column exists in the database.
+            const gender = params?.gender;
+            setProducts(
+                gender
+                    ? (data ?? []).filter((p) => matchesGender(p.gender, gender))
+                    : data ?? []
+            );
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch products');
         } finally {
@@ -100,6 +110,7 @@ export function useProducts() {
                 // Only sent when ticked, so saving products keeps working even
                 // before the is_new column exists in the database.
                 ...(input.is_new ? { is_new: true } : {}),
+                ...(input.gender ? { gender: input.gender } : {}),
             })
             .select()
             .single();
