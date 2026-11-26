@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /cart
+Disallow: /checkout
+Disallow: /order-success
+Disallow: /reset-password
+
+Sitemap: https://www.vrilcouture.co.za/sitemap.xml
