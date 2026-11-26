@@ -1,42 +1,29 @@
-// DRAFT wording: needs the client's approval before it goes live.
 import { useState } from 'react';
 import { getConsentChoice, saveConsentChoice, type ConsentChoice } from '../../lib/analytics';
+import { LAST_UPDATED, SECTIONS, type PolicyBlock } from './privacy.content';
 
-const SECTIONS: { title: string; paragraphs: string[] }[] = [
-    {
-        title: 'What We Collect',
-        paragraphs: [
-            'When you create an account, place an order or contact us, we collect the details you give us, such as your name, email address, phone number, delivery address, order details and message.',
-            'When you browse the site, we and our service providers collect information about your device and visit, such as the pages you view, your approximate location and how you arrived at the site.',
-        ],
-    },
-    {
-        title: 'How We Use It',
-        paragraphs: [
-            'We use your information to process and deliver orders, manage your account, answer your questions, keep the site secure, understand how the site is used and measure how our advertising performs.',
-        ],
-    },
-    {
-        title: 'Who We Share It With',
-        paragraphs: [
-            'We share information only with the providers that help us run the store: Stitch for payments, Supabase for our database and accounts, Vercel for hosting and site statistics, Resend for order emails, and Google for analytics and advertising. Some of these providers process information outside South Africa.',
-            'We do not sell your personal information.',
-        ],
-    },
-    {
-        title: 'Cookies',
-        paragraphs: [
-            'We use Google Analytics and Google Ads. Their cookies are only set if you accept them. If you decline, Google still receives limited information that does not use cookies, which helps us estimate visits and sales.',
-            'The site also stores information in your browser that it needs to work, such as your cart and sign-in session.',
-        ],
-    },
-    {
-        title: 'Your Rights',
-        paragraphs: [
-            'Under the Protection of Personal Information Act (POPIA), you may ask to see, correct or delete your personal information, or object to how we use it. You may also complain to the Information Regulator of South Africa.',
-        ],
-    },
-];
+const CONTACT_EMAIL = 'admin@vrilcouture.co.za';
+
+const HEADING = 'font-display text-xl md:text-2xl uppercase tracking-tight mb-4';
+const BODY = 'text-black/60 text-sm leading-relaxed';
+const COOKIE_BUTTON =
+    'px-8 py-3 border border-black text-xs uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-colors';
+
+const Block = ({ block }: { block: PolicyBlock }) => {
+    if (block.type === 'subheading') {
+        return <h3 className="text-sm font-bold mt-6 mb-2">{block.text}</h3>;
+    }
+    if (block.type === 'list') {
+        return (
+            <ul className={`${BODY} list-disc pl-5 space-y-1 mb-3 last:mb-0`}>
+                {block.items.map((item) => (
+                    <li key={item}>{item}</li>
+                ))}
+            </ul>
+        );
+    }
+    return <p className={`${BODY} mb-3 last:mb-0`}>{block.text}</p>;
+};
 
 export const Privacy = () => {
     const [choice, setChoice] = useState<ConsentChoice | null>(getConsentChoice);
@@ -50,72 +37,90 @@ export const Privacy = () => {
         <main>
             <section className="px-6 md:px-12 py-20 md:py-28 border-b border-black">
                 <h1 className="font-display text-4xl md:text-6xl font-light uppercase tracking-tight mb-6 max-w-3xl">
-                    Privacy Policy
+                    Privacy &amp; Cookie Policy
                 </h1>
-                <p className="text-black/60 text-sm md:text-base max-w-xl">
-                    How Vril Couture collects, uses and protects your personal information.
-                </p>
+                <p className="text-black/60 text-sm md:text-base">Last updated: {LAST_UPDATED}</p>
             </section>
 
             <section className="px-6 md:px-12 py-16 md:py-24 max-w-3xl mx-auto">
                 <div className="space-y-12">
-                    {SECTIONS.map(({ title, paragraphs }) => (
+                    {SECTIONS.map(({ title, blocks }, index) => (
                         <div key={title}>
-                            <h2 className="font-display text-xl md:text-2xl uppercase tracking-tight mb-4">
-                                {title}
+                            <h2 className={HEADING}>
+                                {index + 1}. {title}
                             </h2>
-                            {paragraphs.map((paragraph) => (
-                                <p
-                                    key={paragraph}
-                                    className="text-black/60 text-sm leading-relaxed mb-3 last:mb-0"
-                                >
-                                    {paragraph}
-                                </p>
+                            {blocks.map((block, blockIndex) => (
+                                <Block key={blockIndex} block={block} />
                             ))}
                         </div>
                     ))}
 
                     <div>
-                        <h2 className="font-display text-xl md:text-2xl uppercase tracking-tight mb-4">
-                            Your Cookie Choice
-                        </h2>
-                        <p className="text-black/60 text-sm leading-relaxed mb-4" aria-live="polite">
+                        <h2 className={HEADING}>{SECTIONS.length + 1}. Contact us</h2>
+                        <p className={`${BODY} mb-3`}>
+                            If you have any questions regarding this Privacy and Cookie Policy, wish to
+                            exercise your privacy rights or have concerns regarding the handling of your
+                            personal information, please contact us.
+                        </p>
+                        <address className={`${BODY} not-italic mb-3`}>
+                            Vril Couture
+                            <br />
+                            Website: www.vrilcouture.co.za
+                            <br />
+                            Email:{' '}
+                            <a
+                                href={`mailto:${CONTACT_EMAIL}?subject=Privacy%20Enquiry`}
+                                className="underline hover:text-black"
+                            >
+                                {CONTACT_EMAIL}
+                            </a>
+                            <br />
+                            Business location: Woodstock, Cape Town, South Africa
+                            <br />
+                            Registered legal entity: Vril Couture
+                            <br />
+                            Business registration number: K2024008853
+                        </address>
+                        <p className={`${BODY} mb-3`}>
+                            Please include “Privacy Enquiry” in the subject line of your email.
+                        </p>
+                        <p className={`${BODY} mb-3`}>
+                            If you are dissatisfied with how your personal information has been handled,
+                            you may also lodge a complaint with:
+                        </p>
+                        <p className={`${BODY} mb-6`}>
+                            Information Regulator of South Africa
+                            <br />
+                            Website:{' '}
+                            <a
+                                href="https://inforegulator.org.za/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline hover:text-black"
+                            >
+                                https://inforegulator.org.za/
+                            </a>
+                        </p>
+                        <p className={BODY}>
+                            Your privacy matters. Thank you for placing your trust in Vril Couture.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h2 className={HEADING}>Your cookie choice</h2>
+                        <p className={`${BODY} mb-4`} aria-live="polite">
                             {choice === 'granted' && 'You have accepted analytics and advertising cookies.'}
                             {choice === 'denied' && 'You have declined analytics and advertising cookies.'}
                             {choice === null && 'You have not made a choice yet.'}
                         </p>
                         <div className="flex flex-wrap gap-3">
-                            <button
-                                type="button"
-                                onClick={() => choose('granted')}
-                                className="px-8 py-3 border border-black text-xs uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-colors"
-                            >
+                            <button type="button" onClick={() => choose('granted')} className={COOKIE_BUTTON}>
                                 Accept cookies
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => choose('denied')}
-                                className="px-8 py-3 border border-black text-xs uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-colors"
-                            >
+                            <button type="button" onClick={() => choose('denied')} className={COOKIE_BUTTON}>
                                 Decline cookies
                             </button>
                         </div>
-                    </div>
-
-                    <div>
-                        <h2 className="font-display text-xl md:text-2xl uppercase tracking-tight mb-4">
-                            Contact
-                        </h2>
-                        <p className="text-black/60 text-sm leading-relaxed">
-                            Vril Couture, 145 Sir Lowry Rd, The Palms, Cape Town. Email{' '}
-                            <a
-                                href="mailto:admin@vrilcouture.co.za"
-                                className="underline hover:text-black"
-                            >
-                                admin@vrilcouture.co.za
-                            </a>
-                            .
-                        </p>
                     </div>
                 </div>
             </section>
