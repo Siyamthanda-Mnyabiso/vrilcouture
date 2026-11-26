@@ -80,6 +80,9 @@ export const Privacy = () => {
                             Registered legal entity: Vril Couture
                             <br />
                             Business registration number: K2024008853
+                            <br />
+                            Registered business address: 145 Sir Lowry Road, The Palms, Selwyn
+                            Studios, Unit A058, Woodstock, Cape Town, 7915
                         </address>
                         <p className={`${BODY} mb-3`}>
                             Please include “Privacy Enquiry” in the subject line of your email.

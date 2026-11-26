@@ -1,8 +1,9 @@
 // src/pages/store/Checkout.tsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
+import { useCartStore } from '../../store/cart.store';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
@@ -13,17 +14,17 @@ import type { Session } from '@supabase/supabase-js';
 export const Checkout = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { items, isHydrated, subtotal, removeItem } = useCart();
+    const { items, isHydrated, subtotal, removeItem, updatePrice } = useCart();
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [validatingItems, setValidatingItems] = useState(false);
     const [testMode, setTestMode] = useState(false);
     const [debugInfo, setDebugInfo] = useState<unknown>(null);
-    const [stitchAccepted, setStitchAccepted] = useState(false);
+    const errorRef = useRef<HTMLDivElement>(null);
 
     const [formData, setFormData] = useState({
-        email: user?.email || '',
+        email: '',
         firstName: '',
         lastName: '',
         phone: '',
@@ -33,6 +34,9 @@ export const Checkout = () => {
         country: 'South Africa',
     });
 
+    // Read from the account on every render: it can load after this page does.
+    const email = user?.email || formData.email;
+
     const shipping = subtotal >= 1000 ? 0 : 100;
     const total = subtotal + shipping;
 
@@ -41,6 +45,45 @@ export const Checkout = () => {
             navigate('/cart');
         }
     }, [items, isHydrated, navigate]);
+
+    // The message sits above the form, so bring it into view from the pay button.
+    useEffect(() => {
+        if (error) errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, [error]);
+
+    // The cart keeps the price from when an item was added, but the payment is
+    // for the current price. Update the cart so both pages show the same amount.
+    // Resolves to a message for the customer if they should not pay yet.
+    const refreshPrices = useCallback(async (): Promise<string | null> => {
+        const cartItems = useCartStore.getState().items;
+        const { data, error: priceError } = await supabase
+            .from('products')
+            .select('id, price')
+            .in('id', cartItems.map(item => item.productId));
+
+        if (priceError) {
+            console.error('Error checking prices:', priceError);
+            return 'Failed to check current prices. Please refresh and try again.';
+        }
+
+        const prices = new Map(data.map(product => [product.id, Number(product.price)]));
+        const changed = cartItems.filter(item => {
+            const price = prices.get(item.productId);
+            return price !== undefined && price !== item.price;
+        });
+        if (changed.length === 0) return null;
+
+        changed.forEach(item => updatePrice(item.productId, prices.get(item.productId)!));
+        const names = [...new Set(changed.map(item => item.name))].join(', ');
+        return `The price of ${names} has changed since you added it to your cart. Please check your new total before paying.`;
+    }, [updatePrice]);
+
+    useEffect(() => {
+        if (!isHydrated) return;
+        void refreshPrices().then(message => {
+            if (message) setError(message);
+        });
+    }, [isHydrated, refreshPrices]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -140,7 +183,7 @@ export const Checkout = () => {
             return;
         }
 
-        if (!formData.email || !formData.email.includes('@')) {
+        if (!email || !email.includes('@')) {
             setError('Please enter a valid email address');
             return;
         }
@@ -152,6 +195,14 @@ export const Checkout = () => {
 
         const isValid = await validateVariants();
         if (!isValid) {
+            return;
+        }
+
+        setValidatingItems(true);
+        const priceMessage = await refreshPrices();
+        setValidatingItems(false);
+        if (priceMessage) {
+            setError(priceMessage);
             return;
         }
 
@@ -195,7 +246,7 @@ export const Checkout = () => {
                     image_url: item.image_url || '',
                 })),
                 shippingAddress: {
-                    email: formData.email,
+                    email,
                     firstName: formData.firstName,
                     lastName: formData.lastName,
                     phone: formData.phone,
@@ -364,6 +415,7 @@ export const Checkout = () => {
 
                 {error && (
                     <div
+                        ref={errorRef}
                         role="alert"
                         className={`border p-4 mb-8 text-sm tracking-wide ${
                             testMode ? 'border-black/20 bg-black/[0.03] text-black/70' : 'border-black text-black'
@@ -397,7 +449,7 @@ export const Checkout = () => {
                                     type="email"
                                     name="email"
                                     label="Email"
-                                    value={formData.email}
+                                    value={email}
                                     onChange={handleInputChange}
                                     required
                                     disabled={!!user?.email}
@@ -467,118 +519,12 @@ export const Checkout = () => {
                             </div>
                         </section>
 
-                        <div className="border border-black/10 p-6">
-
-                            {/* Title */}
-                            <div className="mb-5">
-                                <h3 className="text-sm uppercase tracking-[0.2em]">
-                                    Stitch Payments
-                                </h3>
-
-                                {/* Stitch acceptance row */}
-                                <label
-                                    className="flex items-start justify-between gap-4 mt-3 cursor-pointer"
-                                    onClick={() => setStitchAccepted(prev => !prev)}
-                                >
-                                    <div className="text-xs text-black/50 leading-relaxed">
-                                        Use Stitch to securely complete your payment.
-                                    </div>
-
-                                    <input
-                                        type="radio"
-                                        name="stitch"
-                                        checked={stitchAccepted}
-                                        readOnly
-                                        className="mt-1 accent-black"
-                                    />
-                                </label>
-                            </div>
-
-                            {/* Payment Options (display only, NOT selectable) */}
-                            <div className="space-y-3">
-
-                                {/* Visa */}
-                                <div className="border border-black/10 p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <img src="/payments/visa.webp" className="h-5 w-auto" />
-                                        <div>
-                                            <p className="text-sm uppercase tracking-wide">Visa</p>
-                                            <p className="text-xs text-black/40">
-                                                Pay securely with Visa via Stitch
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <span className="text-xs text-black/40 uppercase tracking-widest">
-                Available
-            </span>
-                                </div>
-
-                                {/* Mastercard */}
-                                <div className="border border-black/10 p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <img src="/payments/mastercard.png" className="h-5 w-auto" />
-                                        <div>
-                                            <p className="text-sm uppercase tracking-wide">Mastercard</p>
-                                            <p className="text-xs text-black/40">
-                                                Pay securely with Mastercard via Stitch
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <span className="text-xs text-black/40 uppercase tracking-widest">
-                Available
-            </span>
-                                </div>
-
-                                {/* Apple Pay */}
-                                <div className="border border-black/10 p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <img src="/payments/apple-pay-blk.png" className="h-5 w-auto" />
-                                        <div>
-                                            <p className="text-sm uppercase tracking-wide">Apple Pay</p>
-                                            <p className="text-xs text-black/40">
-                                                Fast checkout with Apple Pay via Stitch
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <span className="text-xs text-black/40 uppercase tracking-widest">
-                Instant
-            </span>
-                                </div>
-
-                                {/* Capitec */}
-                                <div className="border border-black/10 p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <img src="/payments/capitec.webp" className="h-5 w-auto" />
-                                        <div>
-                                            <p className="text-sm uppercase tracking-wide">Capitec Pay</p>
-                                            <p className="text-xs text-black/40">
-                                                Pay directly from your bank via Stitch
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <span className="text-xs text-black/40 uppercase tracking-widest">
-                Secure
-            </span>
-                                </div>
-
-                            </div>
-
-                        </div>
-
                         <Button
                             type="submit"
                             size="lg"
                             fullWidth
                             isLoading={isProcessing || validatingItems}
-                            disabled={
-                                validatingItems ||
-                                items.length === 0 ||
-                                !stitchAccepted
-                            }
+                            disabled={validatingItems || items.length === 0}
                         >
                             {validatingItems
                                 ? 'Validating...'
@@ -588,7 +534,7 @@ export const Checkout = () => {
                         </Button>
 
                         <p className="text-[11px] text-black/40 text-center -mt-2">
-                            You'll be redirected to our secure payment gateway to complete your purchase.
+                            You'll choose your payment method (card, Apple Pay, Capitec Pay or Stitch Pay Later) on our secure payment page.
                         </p>
                     </form>
 
