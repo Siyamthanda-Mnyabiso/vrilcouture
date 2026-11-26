@@ -7,30 +7,37 @@ export const About = () => {
             {/* HERO */}
             <section className="px-6 md:px-12 py-20 md:py-28 border-b border-black">
                 <h1 className="font-display text-4xl md:text-6xl font-light uppercase tracking-tight mb-6 max-w-3xl">
-                    Built On Structure.
-                    Worn With Presence.
+                    About Vril Couture
                 </h1>
                 <p className="text-black/60 text-sm md:text-base max-w-xl">
-                    Vril Couture is a study in form — clothing made for people who think
-                    about what they put on their body before they put it on.
+                    Vril Couture is a South African fashion brand that brings together premium
+                    streetwear, contemporary design and individual expression.
                 </p>
             </section>
 
             {/* STORY */}
             <section className="px-6 md:px-12 py-16 md:py-24 grid md:grid-cols-2 gap-12 border-b border-black">
-                <div>
-                    <h2 className="font-display text-2xl md:text-3xl uppercase tracking-tight mb-4">
-                        The Archive
-                    </h2>
-                    <p className="text-black/60 text-sm leading-relaxed mb-4">
-                        Every piece begins as a question about silhouette, not trend.
-                        We design in small batches, release with intention, and avoid
-                        chasing seasons for their own sake.
+                <div className="text-black/60 text-sm leading-relaxed space-y-4">
+                    <p>
+                        The name Vril represents a controlled form of energy — a philosophy that
+                        influences everything we create. We believe clothing is more than just what
+                        you wear; it is an extension of your identity, your energy and how you choose
+                        to express yourself.
                     </p>
-                    <p className="text-black/60 text-sm leading-relaxed">
-                        What stays constant across every collection is a commitment to
-                        construction — fabric weight, drape, and the kind of detailing
-                        that only shows up after you've worn something a hundred times.
+                    <p>
+                        Our collections combine bold graphics, distinctive silhouettes and premium
+                        fabrics, with a strong emphasis on quality, comfort and attention to detail.
+                        Rooted in South African creativity, we are passionate about supporting local
+                        production while building a brand with global appeal.
+                    </p>
+                    <p>
+                        At Vril Couture, we don't simply follow trends. We create pieces with
+                        character, meaning and purpose, making premium fashion accessible to those
+                        who appreciate individuality and authenticity.
+                    </p>
+                    <p>
+                        More than a clothing brand, Vril Couture is a culture, a mindset and a
+                        statement of self-expression.
                     </p>
                 </div>
                 <img
@@ -40,31 +47,11 @@ export const About = () => {
                 />
             </section>
 
-            {/* VALUES */}
-            <section className="px-6 md:px-12 py-16 md:py-24 border-b border-black">
-                <h2 className="font-display text-2xl md:text-3xl uppercase tracking-tight mb-10 text-center">
-                    What We Stand On
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 max-w-4xl mx-auto text-center">
-                    <div>
-                        <h3 className="text-xs font-bold tracking-wider mb-3">CRAFT</h3>
-                        <p className="text-black/60 text-sm leading-relaxed">
-                            Small runs, real fabric, considered fit.
-                        </p>
-                    </div>
-                    <div>
-                        <h3 className="text-xs font-bold tracking-wider mb-3">RESTRAINT</h3>
-                        <p className="text-black/60 text-sm leading-relaxed">
-                            Fewer pieces, designed to last beyond a single season.
-                        </p>
-                    </div>
-                    <div>
-                        <h3 className="text-xs font-bold tracking-wider mb-3">PRESENCE</h3>
-                        <p className="text-black/60 text-sm leading-relaxed">
-                            Clothing that holds its shape, on you and off the rack.
-                        </p>
-                    </div>
-                </div>
+            {/* TAGLINE */}
+            <section className="px-6 md:px-12 py-16 md:py-24 border-b border-black text-center">
+                <p className="font-display text-2xl md:text-4xl font-light uppercase tracking-tight max-w-3xl mx-auto">
+                    Built in silence. Designed with purpose. Worn with power.
+                </p>
             </section>
 
             {/* CTA */}
