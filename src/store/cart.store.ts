@@ -21,6 +21,7 @@ interface CartStore {
     removeItem: (variantId: string) => void;
     updateQuantity: (variantId: string, quantity: number) => void;
     updateStock: (variantId: string, stock: number) => void; // New method to update stock
+    updatePrice: (productId: string, price: number) => void;
     clearCart: () => void;
     getItemCount: () => number;
     getSubtotal: () => number;
@@ -106,6 +107,15 @@ export const useCartStore = create<CartStore>()(
                         item.variantId === variantId
                             ? { ...item, stock }
                             : item
+                    ),
+                }));
+            },
+
+            // Every size and colour of a product shares its price.
+            updatePrice: (productId, price) => {
+                set((state) => ({
+                    items: state.items.map((item) =>
+                        item.productId === productId ? { ...item, price } : item
                     ),
                 }));
             },
