@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { featureFlags } from '../../lib/featureFlags';
+import { categoryPath, type Gender } from '../../utils/gender';
 
 interface NavSection {
     title: string;
+    gender?: Gender;
     items: string[];
 }
 
@@ -116,7 +118,7 @@ export const MobileNav = ({ isOpen, onClose, navigation, categories }: MobileNav
                                                         {section.items.map((item) => (
                                                             <Link
                                                                 key={item}
-                                                                to={`/category/${item.toLowerCase().replaceAll(' ', '-')}`}
+                                                                to={categoryPath(item, section.gender)}
                                                                 onClick={onClose}
                                                                 className="block text-sm py-2 hover:opacity-60 transition-opacity"
                                                             >

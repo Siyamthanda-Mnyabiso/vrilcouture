@@ -1,3 +1,5 @@
+import type { Gender } from '../../utils/gender';
+
 export interface Product {
     id: string;
     name: string;
@@ -10,6 +12,7 @@ export interface Product {
     sku: string | null;
     stock: number;
     is_new?: boolean;
+    gender?: string | null;
     created_at: string;
     updated_at: string;
     media?: ProductMedia[];
@@ -35,6 +38,7 @@ export interface CreateProductInput {
     sku?: string;
     stock: number;
     is_new?: boolean;
+    gender?: Gender;
 }
 
 export type UpdateProductInput = Partial<CreateProductInput>;

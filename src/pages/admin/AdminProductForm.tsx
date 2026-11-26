@@ -9,6 +9,7 @@ import { uploadProductFile } from '../../lib/uploadProductMedia';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import type { ProductMedia } from '../../features/products/product.types';
+import { GENDERS, GENDER_LABELS, isGender, type Gender } from '../../utils/gender';
 
 interface DraftVariant {
     size: string;
@@ -48,6 +49,7 @@ export const AdminProductForm = () => {
     const [stock, setStock] = useState('0');
     const [categoryId, setCategoryId] = useState('');
     const [isNew, setIsNew] = useState(false);
+    const [gender, setGender] = useState<Gender | ''>('');
     const [existingMedia, setExistingMedia] = useState<ProductMedia[]>([]);
     const [mediaReordered, setMediaReordered] = useState(false);
     // True when the first (main) file was removed in this edit, so pictures added
@@ -86,6 +88,7 @@ export const AdminProductForm = () => {
         setStock(String(currentProduct.stock));
         setCategoryId(currentProduct.category_id ?? '');
         setIsNew(Boolean(currentProduct.is_new));
+        setGender(isGender(currentProduct.gender) ? currentProduct.gender : '');
         setExistingMedia(currentProduct.media ?? []);
     }
 
@@ -196,6 +199,7 @@ export const AdminProductForm = () => {
                 brand: brand || undefined,
                 stock: parseInt(stock, 10) || 0,
                 category_id: categoryId || undefined,
+                gender: gender || undefined,
                 // Only included when it changed (or when ticking on a new product),
                 // so every other product edit is unaffected.
                 ...(isEditing
@@ -368,6 +372,28 @@ export const AdminProductForm = () => {
                             ))}
                         </select>
                     </div>
+                </div>
+
+                <div>
+                    <label htmlFor="gender" className="block text-sm font-medium mb-1">Gender</label>
+                    <select
+                        id="gender"
+                        className="w-full border rounded-md p-2 text-sm"
+                        value={gender}
+                        onChange={(e) => setGender(isGender(e.target.value) ? e.target.value : '')}
+                        required
+                    >
+                        <option value="">Select gender</option>
+                        {GENDERS.map((g) => (
+                            <option key={g} value={g}>
+                                {GENDER_LABELS[g]}
+                            </option>
+                        ))}
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">
+                        Decides whether the product shows under Men or Women in the menu.
+                        Unisex shows under both.
+                    </p>
                 </div>
 
                 <div>

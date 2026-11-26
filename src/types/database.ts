@@ -210,6 +210,7 @@ export type Database = {
           category_id: string | null
           created_at: string
           description: string | null
+          gender: string | null
           id: string
           image_url: string | null
           is_new: boolean
@@ -225,6 +226,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           description?: string | null
+          gender?: string | null
           id?: string
           image_url?: string | null
           is_new?: boolean
@@ -240,6 +242,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           description?: string | null
+          gender?: string | null
           id?: string
           image_url?: string | null
           is_new?: boolean
