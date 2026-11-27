@@ -11,8 +11,15 @@
       ]
     }
   ],
+  "functions": {
+    "api/page.ts": { "includeFiles": "dist/index.html" }
+  },
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/shop", "destination": "/api/page?route=/shop" },
+    { "source": "/new-in", "destination": "/api/page?route=/new-in" },
+    { "source": "/product/:id", "destination": "/api/page?route=/product/:id" },
+    { "source": "/category/:slug", "destination": "/api/page?route=/category/:slug" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
