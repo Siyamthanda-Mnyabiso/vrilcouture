@@ -5,6 +5,8 @@ import { ChevronUp, ChevronDown, Minus, Plus, Play, Truck, RotateCcw } from 'luc
 import { useProducts } from '../../hooks/useProducts';
 import { useCart } from '../../hooks/useCart';
 import { useProductVariants } from '../../hooks/useProductVariants';
+import { usePageMeta } from '../../hooks/usePageMeta';
+import { productMeta } from '../../utils/seo';
 import { featureFlags } from '../../lib/featureFlags';
 
 export const ProductDetails = () => {
@@ -20,6 +22,8 @@ export const ProductDetails = () => {
     const [activeMediaIndex, setActiveMediaIndex] = useState(0);
     const [descriptionOpen, setDescriptionOpen] = useState(true);
     const [deliveryOpen, setDeliveryOpen] = useState(true);
+
+    usePageMeta(product && product.id === slug ? productMeta(product) : null);
 
     useEffect(() => {
         if (slug) fetchProductById(slug);

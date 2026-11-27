@@ -3,12 +3,15 @@ import { useSearchParams } from 'react-router-dom';
 import { ProductGrid } from '../../components/product/ProductGrid';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
+import { usePageMeta } from '../../hooks/usePageMeta';
+import { SHOP_META } from '../../utils/seo';
 
 export const Shop = () => {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const { products, loading, fetchProducts } = useProducts();
     const { categories, fetchCategories } = useCategories();
+    usePageMeta(SHOP_META);
 
     const [selectedCategory, setSelectedCategory] = useState(
         searchParams.get('category') || ''

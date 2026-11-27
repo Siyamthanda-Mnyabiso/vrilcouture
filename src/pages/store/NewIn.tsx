@@ -5,9 +5,12 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ProductGrid } from '../../components/product/ProductGrid';
 import { useProducts } from '../../hooks/useProducts';
+import { usePageMeta } from '../../hooks/usePageMeta';
+import { NEW_IN_META } from '../../utils/seo';
 
 export const NewIn = () => {
     const { products, loading, error, fetchProducts } = useProducts();
+    usePageMeta(NEW_IN_META);
 
     useEffect(() => {
         fetchProducts({ newInOnly: true, sortBy: 'newest' });

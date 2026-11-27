@@ -7,6 +7,8 @@ import { useProducts } from '../../hooks/useProducts';
 import { ProductGrid } from '../../components/product/ProductGrid';
 import type { Category } from '../../types/category';
 import { GENDER_LABELS, isGender } from '../../utils/gender';
+import { usePageMeta } from '../../hooks/usePageMeta';
+import { categoryMeta } from '../../utils/seo';
 
 export const CategoryDetails = () => {
 
@@ -27,6 +29,8 @@ export const CategoryDetails = () => {
     const category: Category | null = categoryChecked
         ? categories.find((c) => c.slug === slug) ?? null
         : null;
+
+    usePageMeta(category ? categoryMeta(category, gender) : null);
 
     useEffect(() => {
         if (category) {
